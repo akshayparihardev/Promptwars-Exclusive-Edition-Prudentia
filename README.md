@@ -87,7 +87,7 @@ This is not a disclaimer footer. It is enforced at the architectural level:
 
 \\\ash
 # 1. Clone the repository
-git clone https://github.com/YOUR_USERNAME/prudentia.git
+git clone https://github.com/akshayparihardev/Promptwars-Exclusive-Edition-Prudentia
 cd prudentia
 
 # 2. Install dependencies
