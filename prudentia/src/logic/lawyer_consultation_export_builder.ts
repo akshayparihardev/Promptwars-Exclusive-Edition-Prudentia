@@ -26,7 +26,6 @@ import type { OfferLetterAnalysis, OfferClause } from './analysis_schema_validat
 import { getClauseTypeLabel } from './clause_to_statute_matcher';
 import type { RangeComparisonResult } from './clause_range_comparator';
 import { buildScenariosExportText } from './consequence_scenario_formatter';
-import type { FormattedConsequenceScenario } from './consequence_scenario_formatter';
 import { formatClauseScenarios } from './consequence_scenario_formatter';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
