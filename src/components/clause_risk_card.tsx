@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { AnalysisClause } from '../logic/analysis_schema_validator';
+import type { OfferClause } from '../logic/analysis_schema_validator';
 import { StatuteCitationPanel } from './statute_citation_panel';
 import { ConsequenceScenarioPanel } from './consequence_scenario_panel';
 import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator';
@@ -7,7 +7,7 @@ import { verifyQuoteInDocument } from '../logic/document_quote_verifier';
 import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher';
 
 interface ClauseRiskCardProps {
-  clause: AnalysisClause;
+  clause: OfferClause;
   documentText: string;
 }
 

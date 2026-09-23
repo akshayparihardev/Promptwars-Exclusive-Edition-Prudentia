@@ -29,16 +29,11 @@ export function StatuteCitationPanel({ applicableLaw, clauseType }: StatuteCitat
             </div>
             {fullEntry && (
               <>
-                {fullEntry.section_text && (
-                  <p className="statute-text">"{fullEntry.section_text}"</p>
+                {fullEntry.text && (
+                  <p className="statute-text">"{fullEntry.text}"</p>
                 )}
                 {fullEntry.relevance_note && (
                   <p className="statute-relevance">{fullEntry.relevance_note}</p>
-                )}
-                {fullEntry.url && (
-                  <a className="statute-link" href={fullEntry.url} target="_blank" rel="noopener noreferrer">
-                    ↗ View on indiacode.nic.in
-                  </a>
                 )}
               </>
             )}

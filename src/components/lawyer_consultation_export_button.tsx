@@ -7,9 +7,9 @@ interface LawyerConsultationExportButtonProps {
   fileName: string | null;
 }
 
-export function LawyerConsultationExportButton({ analysis, fileName }: LawyerConsultationExportButtonProps): React.ReactElement {
+export function LawyerConsultationExportButton({ analysis }: LawyerConsultationExportButtonProps): React.ReactElement {
   const handleExport = () => {
-    printLawyerConsultationExport(analysis, fileName ?? 'offer-letter');
+    printLawyerConsultationExport(analysis, {});
   };
 
   return (
