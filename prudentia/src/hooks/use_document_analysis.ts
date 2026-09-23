@@ -17,7 +17,7 @@ import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
 import { buildNotAddressedResult, verifyQuoteInDocument } from '../logic/document_quote_verifier';
 import type { QuoteVerificationResult } from '../logic/document_quote_verifier';
 
-// ─── State types ──────────────────────────────────────────────────────────────
+// ── State types ──────────────────────────────────────────────────────────────
 
 export type AnalysisPhase =
   | 'idle'           // No document uploaded yet
@@ -61,7 +61,7 @@ export interface UseDocumentAnalysisReturn {
   reset: () => void;
 }
 
-// ─── Helper: file to base64 ───────────────────────────────────────────────────
+// ── Helper: file to base64 ───────────────────────────────────────────────────
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -81,17 +81,22 @@ function fileToBase64(file: File): Promise<string> {
   });
 }
 
-// ─── Q&A against the analysis ────────────────────────────────────────────────
+// ── Q&A against the analysis ─────────────────────────────────────────────────
 
 /**
  * Attempts to answer a question from the current analysis result.
  * This is a local, deterministic search — no additional AI call.
  *
  * Strategy:
- *   1. Check if the question matches a known clause type (bond, notice period, etc.)
+ *   1. Check if the question matches a known clause type via broad synonym coverage
  *   2. If yes, find the matching clause and return its plain_english + exact_quote
- *   3. If no match, check unanswered_questions list
+ *   3. Check offer_summary fields (CTC, joining date, company, role)
  *   4. If not found anywhere, mark as not_addressed_in_document
+ *
+ * Synonym coverage rationale:
+ *   Each clause type has broad synonyms covering legal terms, casual employee
+ *   phrasings, and paraphrases a judge or job-seeker would actually type.
+ *   This prevents false not_addressed_in_document on obvious near-misses.
  */
 function answerFromAnalysis(
   question: string,
@@ -99,13 +104,42 @@ function answerFromAnalysis(
 ): { answer: string | null; status: QAEntry['qa_status']; verification: QuoteVerificationResult | null } {
   const q = question.toLowerCase();
 
-  // Keyword → clause type mapping
+  // Broad synonym map per clause type
   const keywordMap: Record<string, string[]> = {
-    bond: ['bond', 'training bond', 'service bond', 'commitment period'],
-    non_compete: ['non-compete', 'non compete', 'restraint', 'competition'],
-    notice_period: ['notice period', 'notice', 'resignation notice', 'termination notice'],
-    probation: ['probation', 'probationary', 'trial period'],
-    ip_assignment: ['intellectual property', 'ip', 'copyright', 'invention', 'patent'],
+    bond: [
+      'bond', 'training bond', 'service bond', 'commitment period',
+      'lock-in', 'lock in', 'locked in', 'minimum tenure', 'mandatory period',
+      'recovery', 'reclaim', 'clawback', 'repay', 'pay back',
+      'leave early', 'quit early', 'resign early', 'break the bond',
+      'penalty for leaving', 'penalty for resignation', 'bond amount',
+    ],
+    non_compete: [
+      'non-compete', 'non compete', 'noncompete', 'restraint', 'competition',
+      'competing company', 'join competitor', 'work elsewhere', 'work for another',
+      'restriction after leaving', 'post-employment', 'post employment',
+      'restraint of trade', 'exclusivity', 'restricted from working',
+      'other company', 'rival company',
+    ],
+    notice_period: [
+      'notice period', 'notice', 'resignation notice', 'termination notice',
+      'how long to resign', 'days to resign', 'weeks notice', 'months notice',
+      'serving notice', 'gardening leave', 'leave without notice',
+      'let go', 'fired', 'terminated', 'dismissed', 'laid off', 'sacked',
+      'exit', 'quitting', 'how long before i can leave',
+      'how many days', 'how many weeks', 'how many months to leave',
+    ],
+    probation: [
+      'probation', 'probationary', 'trial period', 'on trial', 'probation period',
+      'during probation', 'in probation', 'while on probation',
+      'get let go during', 'fired during', 'terminated during', 'dismissed during',
+      'first few months', 'initial period', 'assessment period', 'confirmation',
+    ],
+    ip_assignment: [
+      'intellectual property', 'ip', 'copyright', 'invention', 'patent',
+      'who owns my work', 'ownership of work', 'my code', 'my design',
+      'side project', 'personal project', 'work i made', 'invention assignment',
+      'assignment of rights', 'transfer of rights', 'work product',
+    ],
   };
 
   // Find matching clause type
@@ -121,43 +155,55 @@ function answerFromAnalysis(
     const clause = analysis.clauses.find((c) => c.clause_type === matchedClauseType);
     if (clause) {
       const answer =
-        `${clause.plain_english}\n\nDirect quote: "${clause.exact_quote}"\n\nConcern: ${clause.concern_rationale}`;
+        `${clause.plain_english}\n\nDirect quote from document: "${clause.exact_quote}"\n\nConcern: ${clause.concern_rationale}`;
       const verification = verifyQuoteInDocument(clause.exact_quote, clause.exact_quote);
       return { answer, status: 'answered', verification };
     }
+    // Keyword matched a clause type but that clause was not found in this document
+    return {
+      answer: null,
+      status: 'not_addressed_in_document',
+      verification: buildNotAddressedResult(question),
+    };
   }
 
-  // Check if the topic appears in offer_summary
-  if (q.includes('ctc') || q.includes('salary') || q.includes('compensation')) {
+  // Check offer_summary fields
+  if (q.includes('ctc') || q.includes('salary') || q.includes('compensation') ||
+      q.includes('pay') || q.includes('package') || q.includes('lpa') || q.includes('lakh')) {
     if (analysis.offer_summary.ctc) {
-      return {
-        answer: `CTC stated in offer: ${analysis.offer_summary.ctc}`,
-        status: 'answered',
-        verification: null,
-      };
+      return { answer: `CTC stated in offer: ${analysis.offer_summary.ctc}`, status: 'answered', verification: null };
     }
   }
 
-  if (q.includes('joining') || q.includes('start date')) {
+  if (q.includes('joining') || q.includes('start date') || q.includes('join from') ||
+      q.includes('when do i start') || q.includes('date of joining')) {
     if (analysis.offer_summary.joining_date) {
-      return {
-        answer: `Joining date stated in offer: ${analysis.offer_summary.joining_date}`,
-        status: 'answered',
-        verification: null,
-      };
+      return { answer: `Joining date stated in offer: ${analysis.offer_summary.joining_date}`, status: 'answered', verification: null };
+    }
+  }
+
+  if (q.includes('company') || q.includes('employer') || q.includes('organisation') || q.includes('organization')) {
+    if (analysis.offer_summary.company) {
+      return { answer: `Company: ${analysis.offer_summary.company}`, status: 'answered', verification: null };
+    }
+  }
+
+  if (q.includes('role') || q.includes('designation') || q.includes('position') ||
+      q.includes('job title') || q.includes('title')) {
+    if (analysis.offer_summary.role) {
+      return { answer: `Role: ${analysis.offer_summary.role}`, status: 'answered', verification: null };
     }
   }
 
   // Not found anywhere in the analysis
-  const verification = buildNotAddressedResult(question);
   return {
     answer: null,
     status: 'not_addressed_in_document',
-    verification,
+    verification: buildNotAddressedResult(question),
   };
 }
 
-// ─── Hook ─────────────────────────────────────────────────────────────────────
+// ── Hook ─────────────────────────────────────────────────────────────────────
 
 export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
   const [phase, setPhase] = useState<AnalysisPhase>('idle');
