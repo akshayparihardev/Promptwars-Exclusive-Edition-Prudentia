@@ -1,3 +1,7 @@
+/**
+ * Local Development Bypass Server.
+ * This is not the production architecture. Production runs as a Vercel serverless function.
+ */
 import 'dotenv/config';
 import express from 'express';
 import analyzeOfferLetter from './api/analyze_offer_letter.js';

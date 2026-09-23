@@ -50,7 +50,14 @@ export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): R
 
       {clause.exact_quote && (
         <div className="quote-verification">
-          <span className={`quote-status-badge ${quoteStatusClass}`}>{quoteStatusLabel}</span>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <span className={`quote-status-badge ${quoteStatusClass}`}>{quoteStatusLabel}</span>
+            {clause.page_hint && (
+              <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "#94a3b8" }}>
+                Page {clause.page_hint}
+              </span>
+            )}
+          </div>
           <p className="quote-text">"{clause.exact_quote}"</p>
         </div>
       )}
@@ -90,6 +97,7 @@ export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): R
           <button
             className="expandable-panel-trigger"
             aria-expanded={statuteOpen}
+            aria-controls={`statute-panel-${clause.id}`}
             onClick={() => setStatuteOpen(!statuteOpen)}
             id={`statute-toggle-${clause.id}`}
           >
@@ -97,7 +105,7 @@ export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): R
             <span className="chevron">▼</span>
           </button>
           {statuteOpen && (
-            <div className="expandable-panel-body">
+            <div className="expandable-panel-body" id={`statute-panel-${clause.id}`}>
               <StatuteCitationPanel applicableLaw={clause.applicable_law} clauseType={clause.clause_type} />
             </div>
           )}
@@ -109,6 +117,7 @@ export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): R
           <button
             className="expandable-panel-trigger"
             aria-expanded={scenarioOpen}
+            aria-controls={`scenario-panel-${clause.id}`}
             onClick={() => setScenarioOpen(!scenarioOpen)}
             id={`scenario-toggle-${clause.id}`}
           >
@@ -116,7 +125,7 @@ export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): R
             <span className="chevron">▼</span>
           </button>
           {scenarioOpen && (
-            <div className="expandable-panel-body">
+            <div className="expandable-panel-body" id={`scenario-panel-${clause.id}`}>
               <ConsequenceScenarioPanel scenarios={clause.consequence_scenarios} clauseTitle={clause.title} />
             </div>
           )}
