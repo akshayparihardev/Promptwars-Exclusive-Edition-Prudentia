@@ -1,157 +1,127 @@
-/**
- * clause_risk_card.tsx
- *
- * Displays a single clause from the analysis — the core unit of the results view.
- *
- * Shows:
- *   - exact_quote (verbatim, with page hint)
- *   - plain_english explanation
- *   - concern_level badge
- *   - concern_rationale (references applicable law)
- *   - key_numbers with range comparison (non-authoritative label mandatory)
- *   - statute_citation_panel (expandable)
- *   - consequence_scenario_panel (expandable)
- *
- * Functional only — no styling yet.
- */
-
-import React from 'react';
-import type { OfferClause } from '../logic/analysis_schema_validator';
-import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher';
-import type { ClauseType } from '../logic/clause_to_statute_matcher';
-import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator';
+import React, { useState } from 'react';
+import type { AnalysisClause } from '../logic/analysis_schema_validator';
 import { StatuteCitationPanel } from './statute_citation_panel';
 import { ConsequenceScenarioPanel } from './consequence_scenario_panel';
+import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator';
+import { verifyQuoteInDocument } from '../logic/document_quote_verifier';
+import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher';
 
 interface ClauseRiskCardProps {
-  clause: OfferClause;
-  /** Index for display (1-based). */
-  index: number;
+  clause: AnalysisClause;
+  documentText: string;
 }
 
-function ConcernLevelBadge({ level }: { level: OfferClause['concern_level'] }): React.ReactElement {
-  const labels: Record<OfferClause['concern_level'], string> = {
-    minor: 'Minor concern',
-    moderate: 'Moderate concern',
-    significant: 'Significant concern',
-  };
-  return (
-    <span
-      id={`concern-badge-${level}`}
-      role="status"
-      aria-label={`Risk level: ${labels[level]}`}
-    >
-      {labels[level].toUpperCase()}
-    </span>
-  );
-}
+export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): React.ReactElement {
+  const [statuteOpen, setStatuteOpen] = useState(false);
+  const [scenarioOpen, setScenarioOpen] = useState(false);
 
-function KeyNumbersDisplay({ clause }: { clause: OfferClause }): React.ReactElement | null {
-  const { duration_months, amount_inr, notice_days } = clause.key_numbers;
-  const hasNumbers = duration_months !== null || amount_inr !== null || notice_days !== null;
+  const quoteResult = verifyQuoteInDocument(clause.exact_quote ?? '', documentText);
+  const rangeComparisons = clause.key_numbers
+    ? buildRangeComparisonsForClause(clause.clause_type, clause.key_numbers)
+    : [];
 
-  if (!hasNumbers) return null;
+  const concernIcons: Record<string, string> = { significant: '⚠', moderate: '◈', minor: '✓' };
 
-  const rangeComparisons = buildRangeComparisonsForClause(clause.clause_type, clause.key_numbers);
+  const quoteStatusClass = quoteResult.quote_status === 'confirmed_in_document' ? 'confirmed'
+    : quoteResult.quote_status === 'not_found_in_document' ? 'not-found' : 'not-addressed';
+
+  const quoteStatusLabel = quoteResult.quote_status === 'confirmed_in_document' ? '✓ Verified in document'
+    : quoteResult.quote_status === 'not_found_in_document' ? '⚠ Could not verify in document — review original'
+    : '— Not addressed in document';
 
   return (
-    <div aria-label="Key numeric values in this clause">
-      <strong>Key numbers:</strong>
-      <ul>
-        {duration_months !== null && <li>Duration: {duration_months} months</li>}
-        {amount_inr !== null && (
-          <li>Amount: ₹{amount_inr.toLocaleString('en-IN')}</li>
-        )}
-        {notice_days !== null && <li>Notice period: {notice_days} days</li>}
-      </ul>
+    <article className="clause-risk-card" data-concern={clause.concern_level} aria-label={`Clause: ${clause.title}`}>
+      <div className="clause-card-header">
+        <div className="clause-title-group">
+          <span className="clause-type-badge">{getClauseTypeLabel(clause.clause_type)}</span>
+          <h3>{clause.title}</h3>
+          {clause.page_hint && (
+            <span style={{ fontSize: 'var(--text-xs)', color: '#475569' }}>Page {clause.page_hint}</span>
+          )}
+        </div>
+        <span className={`concern-badge ${clause.concern_level}`}>
+          {concernIcons[clause.concern_level] ?? ''} {clause.concern_level}
+        </span>
+      </div>
 
-      {rangeComparisons.length > 0 && (
-        <div aria-label="Comparison against observed practice ranges">
-          <strong>Compared to typical practice (non-authoritative):</strong>
-          {rangeComparisons.map((comparison, i) => (
-            <div key={i} id={`range-comparison-${clause.id}-${i}`}>
-              <span aria-label={`Range position: ${getRangePositionLabel(comparison.position)}`}>
-                {getRangePositionLabel(comparison.position)}
-              </span>
-              <p>{comparison.summary}</p>
-              <small>
-                ⚠ {comparison.non_authoritative_label}
-              </small>
-            </div>
-          ))}
+      <p className="clause-plain-english">{clause.plain_english}</p>
+
+      <div className="clause-rationale">{clause.concern_rationale}</div>
+
+      {clause.exact_quote && (
+        <div className="quote-verification">
+          <span className={`quote-status-badge ${quoteStatusClass}`}>{quoteStatusLabel}</span>
+          <p className="quote-text">"{clause.exact_quote}"</p>
         </div>
       )}
-    </div>
-  );
-}
 
-export function ClauseRiskCard({
-  clause,
-  index,
-}: ClauseRiskCardProps): React.ReactElement {
-  return (
-    <article
-      id={`clause-card-${clause.id}`}
-      aria-labelledby={`clause-title-${clause.id}`}
-      data-concern-level={clause.concern_level}
-      data-clause-type={clause.clause_type}
-    >
-      <header>
-        <h3 id={`clause-title-${clause.id}`}>
-          {index}. {clause.title}
-        </h3>
-        <ConcernLevelBadge level={clause.concern_level} />
-        <span aria-label={`Clause type: ${getClauseTypeLabel(clause.clause_type as ClauseType)}`}>
-          {getClauseTypeLabel(clause.clause_type as ClauseType)}
-        </span>
-        {clause.page_hint && (
-          <span aria-label={`Approximately page ${clause.page_hint}`}>
-            ~Page {clause.page_hint}
-          </span>
-        )}
-      </header>
+      {clause.key_numbers && (
+        <div className="key-numbers">
+          {clause.key_numbers.duration_months != null && (
+            <span className="key-number-chip">Duration: <span>{clause.key_numbers.duration_months} months</span></span>
+          )}
+          {clause.key_numbers.amount_inr != null && (
+            <span className="key-number-chip">Amount: <span>₹{clause.key_numbers.amount_inr.toLocaleString('en-IN')}</span></span>
+          )}
+          {clause.key_numbers.notice_days != null && (
+            <span className="key-number-chip">Notice: <span>{clause.key_numbers.notice_days} days</span></span>
+          )}
+        </div>
+      )}
 
-      {/* Verbatim quote from document — satisfies "exact clause + page reference" requirement */}
-      <section aria-label="Exact quote from document">
-        <h4>Exact quote from your document</h4>
-        <blockquote
-          id={`exact-quote-${clause.id}`}
-          cite={clause.page_hint ? `Page ${clause.page_hint}` : undefined}
-        >
-          {clause.exact_quote}
-        </blockquote>
-        {clause.page_hint && (
-          <cite>Source: approximately page {clause.page_hint} of your document</cite>
-        )}
-      </section>
+      {rangeComparisons.map((rc) => (
+        <div key={rc.range_key} className="range-comparison">
+          <span className={`range-badge ${rc.position}`}>{getRangePositionLabel(rc.position)}</span>
+          <span>{rc.summary}</span>
+          {rc.range_low != null && rc.range_high != null && (
+            <span style={{ color: '#334155' }}>({rc.range_low}–{rc.range_high})</span>
+          )}
+        </div>
+      ))}
 
-      {/* Plain English explanation */}
-      <section aria-label="Plain language explanation">
-        <h4>What this means</h4>
-        <p>{clause.plain_english}</p>
-      </section>
+      {rangeComparisons.length > 0 && (
+        <p style={{ fontSize: 'var(--text-xs)', color: '#334155', marginTop: 'var(--space-2)' }}>
+          {rangeComparisons[0].non_authoritative_label}
+        </p>
+      )}
 
-      {/* Key numbers + range comparison */}
-      <KeyNumbersDisplay clause={clause} />
+      {clause.applicable_law.length > 0 && (
+        <div className="expandable-panel">
+          <button
+            className="expandable-panel-trigger"
+            aria-expanded={statuteOpen}
+            onClick={() => setStatuteOpen(!statuteOpen)}
+            id={`statute-toggle-${clause.id}`}
+          >
+            <span>⚖ Indian Law References ({clause.applicable_law.length})</span>
+            <span className="chevron">▼</span>
+          </button>
+          {statuteOpen && (
+            <div className="expandable-panel-body">
+              <StatuteCitationPanel applicableLaw={clause.applicable_law} clauseType={clause.clause_type} />
+            </div>
+          )}
+        </div>
+      )}
 
-      {/* Concern rationale — must reference applicable law, not bare opinion */}
-      <section aria-label="Why this is flagged">
-        <h4>Why this is flagged</h4>
-        <p>{clause.concern_rationale}</p>
-      </section>
-
-      {/* Expandable statute citations */}
-      <StatuteCitationPanel
-        applicableLaw={clause.applicable_law}
-        clauseId={clause.id}
-      />
-
-      {/* Expandable consequence scenarios */}
-      <ConsequenceScenarioPanel
-        clauseId={clause.id}
-        clauseType={clause.clause_type}
-        scenarios={clause.consequence_scenarios}
-      />
+      {clause.consequence_scenarios.length > 0 && (
+        <div className="expandable-panel">
+          <button
+            className="expandable-panel-trigger"
+            aria-expanded={scenarioOpen}
+            onClick={() => setScenarioOpen(!scenarioOpen)}
+            id={`scenario-toggle-${clause.id}`}
+          >
+            <span>→ What happens if this clause is triggered? ({clause.consequence_scenarios.length})</span>
+            <span className="chevron">▼</span>
+          </button>
+          {scenarioOpen && (
+            <div className="expandable-panel-body">
+              <ConsequenceScenarioPanel scenarios={clause.consequence_scenarios} clauseTitle={clause.title} />
+            </div>
+          )}
+        </div>
+      )}
     </article>
   );
 }

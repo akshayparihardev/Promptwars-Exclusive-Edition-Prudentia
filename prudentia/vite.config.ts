@@ -1,9 +1,13 @@
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': 'http://localhost:3001'
+    }
+  },
   test: {
     environment: 'node',
     globals: true,
@@ -12,6 +16,6 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json'],
       include: ['src/logic/**/*.ts', 'src/data/**/*.ts'],
-    },
-  },
+    }
+  }
 })
