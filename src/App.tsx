@@ -2,9 +2,14 @@ import React from 'react';
 import { useDocumentAnalysis } from './hooks/use_document_analysis';
 import { DocumentUploadScreen } from './components/document_upload_screen';
 import { AnalysisResultsView } from './components/analysis_results_view';
+import { TwoPaneLayout } from './components/two_pane_layout';
+import { PdfViewer } from './components/pdf_viewer';
+import { useState } from 'react';
 
 export default function App(): React.ReactElement {
-  const { phase, analysis, error, fileName, qaHistory, extractedPdfText, analyzeDocument, askQuestion, reset } = useDocumentAnalysis();
+  const { phase, analysis, error, fileName, originalFile, qaHistory, extractedPdfText, analyzeDocument, askQuestion, reset } = useDocumentAnalysis();
+  const [targetPage, setTargetPage] = useState<number | undefined>(undefined);
+  const [highlightQuote, setHighlightQuote] = useState<string | undefined>(undefined);
   const isProcessing = phase === 'uploading' || phase === 'analyzing' || phase === 'validating';
 
   if (phase === 'error' && error) {

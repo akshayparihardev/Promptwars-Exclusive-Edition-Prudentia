@@ -9,9 +9,10 @@ import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher';
 interface ClauseRiskCardProps {
   clause: OfferClause;
   documentText: string;
+  onViewInDocument?: (page: number, quote: string) => void;
 }
 
-export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): React.ReactElement {
+export function ClauseRiskCard({ clause, documentText, onViewInDocument }: ClauseRiskCardProps): React.ReactElement {
   const [statuteOpen, setStatuteOpen] = useState(false);
   const [scenarioOpen, setScenarioOpen] = useState(false);
 

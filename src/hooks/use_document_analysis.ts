@@ -56,6 +56,8 @@ export interface UseDocumentAnalysisReturn {
   qaHistory: QAEntry[];
   /** Full text independently extracted from the PDF using PDF.js. */
   extractedPdfText: string;
+  /** The original File object uploaded. */
+  originalFile: File | null;
   /** Triggers a new analysis for the given file. */
   analyzeDocument: (file: File) => Promise<void>;
   /** Asks a question against the current analysis. */
@@ -212,7 +214,9 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
   const [phase, setPhase] = useState<AnalysisPhase>('idle');
   const [analysis, setAnalysis] = useState<OfferLetterAnalysis | null>(null);
   const [error, setError] = useState<AnalysisError | null>(null);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const [fileName,
+    originalFile, setFileName] = useState<string | null>(null);
+  const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [qaHistory, setQaHistory] = useState<QAEntry[]>([]);
   const [extractedPdfText, setExtractedPdfText] = useState<string>('');
 
@@ -223,6 +227,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
     setQaHistory([]);
     setExtractedPdfText('');
     setFileName(file.name);
+    setOriginalFile(file);
 
     // Step 1: Extract text independently using PDF.js (client-side)
     try {
@@ -331,6 +336,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
     setAnalysis(null);
     setError(null);
     setFileName(null);
+    setOriginalFile(null);
     setQaHistory([]);
     setExtractedPdfText('');
   }, []);

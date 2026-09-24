@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
 import { ClauseRiskCard } from './clause_risk_card';
+import { RiskSummaryDashboard } from './risk_summary_dashboard';
 import { LawyerConsultationExportButton } from './lawyer_consultation_export_button';
 import type { QAEntry } from '../hooks/use_document_analysis';
 

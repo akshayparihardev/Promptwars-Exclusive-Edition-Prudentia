@@ -1,0 +1,75 @@
+
+.pdf-viewer-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background-color: #f8fafc;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.pdf-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  background: white;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.pdf-page-info {
+  font-weight: 500;
+  color: #334155;
+  font-size: 14px;
+}
+
+.pdf-canvas-wrapper {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 16px;
+}
+
+.pdf-canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+.pdf-highlight-overlay {
+  position: absolute;
+  top: 16px; /* match padding of wrapper */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.pdf-highlight {
+  position: absolute;
+  background-color: rgba(250, 204, 21, 0.4); /* Tailwind yellow-400 with opacity */
+  border: 1px solid rgba(234, 179, 8, 0.8);
+  border-radius: 2px;
+  z-index: 10;
+  mix-blend-mode: multiply;
+}
+
+.pdf-loading, .pdf-error {
+  text-align: center;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+.pdf-error {
+  color: #ef4444;
+}
