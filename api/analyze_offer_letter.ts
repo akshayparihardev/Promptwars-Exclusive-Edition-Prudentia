@@ -31,9 +31,9 @@ import {
   validateAnalysisOutput,
   isPartiallyValid,
   type OfferLetterAnalysis,
-} from '../src/logic/analysis_schema_validator';
-import { INDIAN_STATUTE_REFERENCE } from '../src/data/indian_statute_reference';
-import { buildStatuteContextForPrompt, type ClauseType } from '../src/logic/clause_to_statute_matcher';
+} from '../src/logic/analysis_schema_validator.js';
+import { INDIAN_STATUTE_REFERENCE } from '../src/data/indian_statute_reference.js';
+import { buildStatuteContextForPrompt, type ClauseType } from '../src/logic/clause_to_statute_matcher.js';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -56,7 +56,7 @@ const MAX_RETRIES = 1;
  */
 function buildAnalysisPrompt(isRetry = false): string {
   // Build the full statute reference block for injection into the prompt
-  const statuteBlock = Object.entries(INDIAN_STATUTE_REFERENCE)
+  const statuteBlock = Object.entries(INDIAN_STATUTE_REFERENCE as Record<string, any>)
     .map(([key, entry]) => {
       return (
         `[${key}] ${entry.act}, Section ${entry.section} — "${entry.title}"\n` +

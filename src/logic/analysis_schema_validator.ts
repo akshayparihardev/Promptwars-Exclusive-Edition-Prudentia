@@ -210,8 +210,8 @@ const offerLetterAnalysisSchema = {
 
 // ─── Validator instance ───────────────────────────────────────────────────────
 
-const ajv = new Ajv({ allErrors: true, strict: false });
-addFormats(ajv);
+const ajv = new (Ajv as any)({ allErrors: true, strict: false });
+(addFormats as any)(ajv);
 
 let _compiledValidator: ValidateFunction | null = null;
 
@@ -272,7 +272,7 @@ export function validateAnalysisOutput(raw: unknown): ValidationResult {
 export function validateOrThrow(raw: unknown): OfferLetterAnalysis {
   const result = validateAnalysisOutput(raw);
   if (!result.valid) {
-    throw new Error(`Gemini output failed schema validation:\n${result.errors.join('\n')}`);
+    throw new Error(`Gemini output failed schema validation:\n${(result as any).errors.join('\n')}`);
   }
   return result.data;
 }
