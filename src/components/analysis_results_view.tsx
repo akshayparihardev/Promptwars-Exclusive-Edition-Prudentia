@@ -7,12 +7,14 @@ import type { QAEntry } from '../hooks/use_document_analysis';
 interface AnalysisResultsViewProps {
   analysis: OfferLetterAnalysis;
   fileName: string | null;
+  /** Independently extracted PDF text for quote verification (PDF.js) */
+  extractedPdfText: string;
   qaHistory: QAEntry[];
   onAskQuestion: (q: string) => void;
   onReset: () => void;
 }
 
-export function AnalysisResultsView({ analysis, fileName, qaHistory, onAskQuestion, onReset }: AnalysisResultsViewProps): React.ReactElement {
+export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHistory, onAskQuestion, onReset }: AnalysisResultsViewProps): React.ReactElement {
   const [qaInput, setQaInput] = useState('');
 
   const handleQaSubmit = (e: React.FormEvent) => {
@@ -23,14 +25,15 @@ export function AnalysisResultsView({ analysis, fileName, qaHistory, onAskQuesti
 
   const s = analysis.offer_summary;
 
-  // Build document text from all clause exact_quotes for client-side verification.
-  // Since Gemini extracts these verbatim from the PDF via native vision, this gives
-  // the quote verifier a real corpus to match against without needing a separate
-  // text extraction step.
-  const documentText = analysis.clauses
+  // Use independently extracted PDF text (from PDF.js) for quote verification.
+  // This is architecturally critical: we verify Gemini's claims against text
+  // parsed independently from the PDF, not against Gemini's own output.
+  // Falls back to concatenated LLM quotes if PDF.js extraction failed.
+  const fallbackQuoteText = analysis.clauses
     .map((c) => c.exact_quote)
     .filter(Boolean)
     .join(' ');
+  const documentText = extractedPdfText || fallbackQuoteText;
 
   return (
     <div id="prudentia-results-view">

@@ -16,6 +16,7 @@ import { useState, useCallback } from 'react';
 import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
 import { buildNotAddressedResult, verifyQuoteInDocument } from '../logic/document_quote_verifier';
 import type { QuoteVerificationResult } from '../logic/document_quote_verifier';
+import { extractTextFromPdf } from '../logic/pdf_text_extractor';
 
 // ── State types ──────────────────────────────────────────────────────────────
 
@@ -53,6 +54,8 @@ export interface UseDocumentAnalysisReturn {
   fileName: string | null;
   /** Q&A history for this analysis session. */
   qaHistory: QAEntry[];
+  /** Full text independently extracted from the PDF using PDF.js. */
+  extractedPdfText: string;
   /** Triggers a new analysis for the given file. */
   analyzeDocument: (file: File) => Promise<void>;
   /** Asks a question against the current analysis. */
@@ -211,14 +214,25 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
   const [error, setError] = useState<AnalysisError | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [qaHistory, setQaHistory] = useState<QAEntry[]>([]);
+  const [extractedPdfText, setExtractedPdfText] = useState<string>('');
 
   const analyzeDocument = useCallback(async (file: File) => {
     setPhase('uploading');
     setError(null);
     setAnalysis(null);
     setQaHistory([]);
+    setExtractedPdfText('');
     setFileName(file.name);
 
+    // Step 1: Extract text independently using PDF.js (client-side)
+    try {
+      const extraction = await extractTextFromPdf(file);
+      setExtractedPdfText(extraction.fullText);
+    } catch {
+      console.warn('[Prudentia] PDF.js text extraction failed');
+    }
+
+    // Step 2: Convert to base64 for the Gemini API call
     let pdfBase64: string;
     try {
       pdfBase64 = await fileToBase64(file);
@@ -318,6 +332,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
     setError(null);
     setFileName(null);
     setQaHistory([]);
+    setExtractedPdfText('');
   }, []);
 
   return {
@@ -326,6 +341,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
     error,
     fileName,
     qaHistory,
+    extractedPdfText,
     analyzeDocument,
     askQuestion,
     reset,

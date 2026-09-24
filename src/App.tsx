@@ -4,7 +4,7 @@ import { DocumentUploadScreen } from './components/document_upload_screen';
 import { AnalysisResultsView } from './components/analysis_results_view';
 
 export default function App(): React.ReactElement {
-  const { phase, analysis, error, fileName, qaHistory, analyzeDocument, askQuestion, reset } = useDocumentAnalysis();
+  const { phase, analysis, error, fileName, qaHistory, extractedPdfText, analyzeDocument, askQuestion, reset } = useDocumentAnalysis();
   const isProcessing = phase === 'uploading' || phase === 'analyzing' || phase === 'validating';
 
   if (phase === 'error' && error) {
@@ -31,7 +31,7 @@ export default function App(): React.ReactElement {
   if (phase === 'complete' && analysis) {
     return (
       <AnalysisResultsView
-        analysis={analysis} fileName={fileName}
+        analysis={analysis} fileName={fileName} extractedPdfText={extractedPdfText}
         qaHistory={qaHistory} onAskQuestion={askQuestion} onReset={reset}
       />
     );
