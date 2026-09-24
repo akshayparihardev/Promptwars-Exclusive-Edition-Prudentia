@@ -214,8 +214,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
   const [phase, setPhase] = useState<AnalysisPhase>('idle');
   const [analysis, setAnalysis] = useState<OfferLetterAnalysis | null>(null);
   const [error, setError] = useState<AnalysisError | null>(null);
-  const [fileName,
-    originalFile, setFileName] = useState<string | null>(null);
+  const [fileName, setFileName] = useState<string | null>(null);
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [qaHistory, setQaHistory] = useState<QAEntry[]>([]);
   const [extractedPdfText, setExtractedPdfText] = useState<string>('');
