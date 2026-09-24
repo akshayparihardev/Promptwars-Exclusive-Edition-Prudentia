@@ -332,99 +332,6 @@ Open **http://localhost:5173**, upload any PDF offer letter, and get a full anal
 
 ---
 
-## ☁️ Deployment Guide
-
-### The Answer: Deploy to Vercel. No contest.
-
-Here is why Vercel and not the alternatives:
-
-| Platform | Verdict | Reason |
-|---|---|---|
-| **Vercel** ✅ | **Recommended** | This project is built for Vercel. The `api/` folder is already in Vercel Serverless Function format. Zero configuration needed. Free tier is generous. Deploy in 2 minutes. |
-| Render | ⚠️ Possible | Would require converting `api/analyze_offer_letter.ts` from a Vercel handler to an Express route and adding a Dockerfile or buildpack. Significant refactoring. |
-| Fly.io | ⚠️ Possible | Requires Dockerfile, persistent container, overkill for a stateless serverless app. Better for databases and long-running services. |
-| Railway | ⚠️ Possible | Same as Render — Express refactor needed. |
-| Netlify | ❌ Avoid | Netlify Functions have a different runtime than Vercel Functions. The `@vercel/node` types and response API are incompatible. |
-
-### Deploy to Vercel (2 minutes)
-
-**Option A — Vercel Dashboard (easiest):**
-
-1. Go to [vercel.com/new](https://vercel.com/new)
-2. Import your GitHub repository
-3. Vercel auto-detects Vite + the `api/` folder
-4. Add one environment variable: `GEMINI_API_KEY` = your key
-5. Click Deploy
-
-**Option B — Vercel CLI:**
-
-```bash
-npm install -g vercel
-vercel login
-vercel --prod
-# When prompted, add GEMINI_API_KEY as an environment variable
-```
-
-**What Vercel does automatically:**
-- Builds the Vite frontend and serves it from a global CDN
-- Deploys `api/analyze_offer_letter.ts` as a serverless function on Node.js 20
-- Issues an SSL certificate
-- Provides a `*.vercel.app` domain instantly
-
-**To restore to the pre-V0 savepoint if needed:**
-```bash
-git checkout savepoint-pre-v0-final
-git push origin HEAD:main --force
-# Then redeploy on Vercel
-```
-
----
-
-## 📁 Project Structure
-
-```
-Prudentia/
-├── api/
-│   └── analyze_offer_letter.ts   # Vercel serverless endpoint (SSE streaming)
-│
-├── src/
-│   ├── components/
-│   │   ├── analysis_results_view.tsx      # Scrollable left pane (all results)
-│   │   ├── clause_risk_card.tsx           # Individual clause card (collapsible)
-│   │   ├── consequence_scenario_panel.tsx # What-if simulator UI
-│   │   ├── document_upload_screen.tsx     # Upload / home screen
-│   │   ├── lawyer_consultation_export_button.tsx
-│   │   ├── pdf_viewer.tsx                 # PDF.js canvas + bounding box highlights
-│   │   ├── risk_summary_dashboard.tsx     # Top-level risk overview
-│   │   ├── statute_citation_panel.tsx     # Statute reference display
-│   │   └── two_pane_layout.tsx            # Desktop: analysis | PDF split view
-│   │
-│   ├── data/
-│   │   └── indian_statute_reference.ts    # 8 hardcoded Indian statutes (verbatim text)
-│   │
-│   ├── hooks/
-│   │   └── use_document_analysis.ts       # Full lifecycle hook (SSE streaming)
-│   │
-│   ├── logic/
-│   │   ├── analysis_schema_validator.ts
-│   │   ├── clause_range_comparator.ts
-│   │   ├── clause_to_statute_matcher.ts
-│   │   ├── consequence_scenario_formatter.ts
-│   │   ├── document_quote_verifier.ts     # tokenPositionMap algorithm
-│   │   ├── indian_statute_reference.ts
-│   │   ├── lawyer_consultation_export_builder.ts
-│   │   └── pdf_text_extractor.ts
-│   │
-│   ├── App.tsx                            # Root — phase state machine
-│   └── index.css                          # Design system
-│
-├── tests/                                 # 150 tests, 10 files
-├── server.js                              # Local Express wrapper
-├── vercel.json                            # Vercel deployment config
-└── package.json
-```
-
----
 
 ## 🎨 Design Principles
 
@@ -461,9 +368,8 @@ This is a real architectural improvement, not a fake progress bar.
 **Event:** PromptWars: Virtual (Exclusive Edition) — Hack2Skill  
 **Problem Statement:** AI for Legal Assistance & Access  
 **Repository Size:** < 500 KB (limit: 10 MB)  
-**Model:** Gemini 2.5 Flash (as required)  
+**Model:** Gemini 2.5 Flash  
 **Tests:** 150 passing, 0 failing  
-**Build:** Production bundle verified clean
 
 ---
 
