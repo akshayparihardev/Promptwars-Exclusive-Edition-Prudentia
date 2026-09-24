@@ -8,6 +8,116 @@ interface PdfViewerProps {
   highlightQuote?: string;
 }
 
+interface TextItem {
+  str: string;
+  transform: number[];
+  width: number;
+  height: number;
+}
+
+interface HighlightRect {
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+}
+
+/**
+ * Normalize text for comparison: lowercase, collapse whitespace, remove punctuation variants.
+ */
+function normalize(text: string): string {
+  return text.toLowerCase().replace(/[\u2018\u2019\u201c\u201d]/g, "'").replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Find the best multi-span match of searchText within the page's text items.
+ * Returns an array of rects (one per matching text item span) in PDF unscaled coordinates.
+ * 
+ * Strategy:
+ * 1. Build a token array from all text items with position metadata
+ * 2. Concatenate tokens into a single string for substring search
+ * 3. When a match is found, map back to the source items using char offsets
+ * 4. Return bounding rects for each matched item
+ */
+function findHighlightRects(items: TextItem[], searchText: string, scale: number, viewportHeight: number): HighlightRect[] {
+  if (!searchText || items.length === 0) return [];
+
+  // Build a flat text and a map from char index → item index
+  let flat = '';
+  const charToItem: { itemIdx: number; charIdx: number }[] = [];
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item.str) continue;
+    const start = flat.length;
+    flat += item.str;
+    for (let c = 0; c < item.str.length; c++) {
+      charToItem.push({ itemIdx: i, charIdx: c });
+    }
+    // Add a space between items if needed for word boundary matching
+    if (!item.str.endsWith(' ') && i < items.length - 1) {
+      flat += ' ';
+      charToItem.push({ itemIdx: i, charIdx: item.str.length - 1 });
+    }
+  }
+
+  const normalizedFlat = normalize(flat);
+  const normalizedSearch = normalize(searchText);
+  
+  // Try to find the search text — try progressively shorter prefixes if not found
+  // (handles cases where the quote is truncated in the rendered page)
+  let matchStart = -1;
+  let matchEnd = -1;
+  let searchLen = normalizedSearch.length;
+  
+  while (searchLen >= Math.min(40, normalizedSearch.length * 0.5)) {
+    const sub = normalizedSearch.slice(0, searchLen);
+    const idx = normalizedFlat.indexOf(sub);
+    if (idx !== -1) {
+      matchStart = idx;
+      matchEnd = idx + sub.length;
+      break;
+    }
+    searchLen = Math.floor(searchLen * 0.85);
+  }
+
+  if (matchStart === -1) return [];
+
+  // Find which items are covered by [matchStart, matchEnd]
+  const coveredItems = new Set<number>();
+  for (let c = matchStart; c < matchEnd && c < charToItem.length; c++) {
+    coveredItems.add(charToItem[c].itemIdx);
+  }
+
+  // Group into contiguous runs (same item) and compute rects
+  const rects: HighlightRect[] = [];
+  for (const idx of coveredItems) {
+    const item = items[idx];
+    if (!item.str.trim()) continue;
+
+    // PDF coordinate system: origin bottom-left, y increases up
+    // transform = [scaleX, skewY, skewX, scaleY, tx, ty]
+    const tx = item.transform[4];
+    const ty = item.transform[5];
+    const fontHeight = Math.abs(item.transform[3]);
+    
+    // Convert from PDF space to canvas space (y-flip)
+    const canvasTop = (viewportHeight - ty - fontHeight) * scale;
+    const canvasLeft = tx * scale;
+    const canvasWidth = item.width * scale;
+    const canvasHeight = (fontHeight + 2) * scale; // +2 for visual padding
+
+    rects.push({
+      left: canvasLeft,
+      top: canvasTop,
+      width: Math.max(canvasWidth, 4),
+      height: Math.max(canvasHeight, 8),
+    });
+  }
+
+  return rects;
+}
+
 export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -17,19 +127,22 @@ export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) 
   const [numPages, setNumPages] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  const viewportRef = useRef<any>(null);
-  const unscaledViewportRef = useRef<any>(null);
+  const [highlightCount, setHighlightCount] = useState(0);
+
+  const scaleRef = useRef<number>(1);
+  const unscaledHeightRef = useRef<number>(0);
   const renderTaskRef = useRef<any>(null);
 
   // Load PDF
   useEffect(() => {
     let active = true;
     setLoading(true);
-    
+    setError(null);
+
     const load = async () => {
       try {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.162/pdf.worker.min.mjs';
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.162/pdf.worker.min.mjs';
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         if (active) {
@@ -56,6 +169,40 @@ export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) 
     }
   }, [targetPage, numPages]);
 
+  const drawHighlights = useCallback(async (page: pdfjsLib.PDFPageProxy) => {
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    overlay.innerHTML = '';
+    setHighlightCount(0);
+
+    if (!highlightQuote) return;
+
+    try {
+      const textContent = await page.getTextContent();
+      const items = textContent.items as TextItem[];
+      const rects = findHighlightRects(
+        items,
+        highlightQuote,
+        scaleRef.current,
+        unscaledHeightRef.current
+      );
+
+      setHighlightCount(rects.length);
+
+      for (const rect of rects) {
+        const div = document.createElement('div');
+        div.className = 'pdf-highlight';
+        div.style.left = `${rect.left}px`;
+        div.style.top = `${rect.top}px`;
+        div.style.width = `${rect.width}px`;
+        div.style.height = `${rect.height}px`;
+        overlay.appendChild(div);
+      }
+    } catch (e) {
+      console.error('Highlight error:', e);
+    }
+  }, [highlightQuote]);
+
   const renderPage = useCallback(async () => {
     if (!pdfDoc || !canvasRef.current || !containerRef.current) return;
     const canvas = canvasRef.current;
@@ -65,6 +212,7 @@ export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) 
     try {
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel();
+        renderTaskRef.current = null;
       }
 
       const page = await pdfDoc.getPage(currentPage);
@@ -73,112 +221,74 @@ export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) 
       const scale = Math.min(containerWidth / unscaled.width, 2.0);
       const viewport = page.getViewport({ scale });
 
+      scaleRef.current = scale;
+      unscaledHeightRef.current = unscaled.height;
+
       canvas.width = viewport.width;
       canvas.height = viewport.height;
       canvas.style.width = '100%';
 
-      viewportRef.current = viewport;
-      unscaledViewportRef.current = unscaled;
-
       renderTaskRef.current = page.render({ canvasContext: ctx, viewport });
       await renderTaskRef.current.promise;
       renderTaskRef.current = null;
-      
-      // Draw highlights after rendering
-      drawHighlights(page, scale);
+
+      await drawHighlights(page);
     } catch (err: any) {
       if (err?.name !== 'RenderingCancelledException') {
         console.error('Render error:', err);
       }
     }
-  }, [pdfDoc, currentPage, highlightQuote]);
+  }, [pdfDoc, currentPage, drawHighlights]);
 
   useEffect(() => {
     renderPage();
   }, [renderPage]);
 
-  // Handle resizing
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const observer = new ResizeObserver(() => {
-      renderPage();
-    });
+    const observer = new ResizeObserver(() => renderPage());
     observer.observe(container);
     return () => observer.disconnect();
   }, [renderPage]);
 
-  const drawHighlights = async (page: pdfjsLib.PDFPageProxy, scale: number) => {
-    const overlay = overlayRef.current;
-    if (!overlay || !highlightQuote) {
-       if (overlay) overlay.innerHTML = '';
-       return;
-    }
-    overlay.innerHTML = '';
-
-    try {
-      const textContent = await page.getTextContent();
-      const items = textContent.items as any[];
-      
-      // Very basic text matching for highlighting
-      const normalizedSearch = highlightQuote.toLowerCase().replace(/\s+/g, ' ').trim();
-      if (!normalizedSearch) return;
-
-      // This is a simplified highlighting approach. We highlight any text item
-      // that contains part of the search string or vice-versa.
-      // A more robust approach requires matching across items, but this works well for MVP.
-      for (const item of items) {
-        if (!item.str || item.str.trim() === '') continue;
-        const normalizedItem = item.str.toLowerCase().replace(/\s+/g, ' ').trim();
-        
-        if (normalizedItem.length > 5 && (normalizedSearch.includes(normalizedItem) || normalizedItem.includes(normalizedSearch))) {
-          // Transform coordinates from PDF space to canvas space
-          // transform is [scaleX, skewY, skewX, scaleY, tx, ty]
-          const tx = item.transform[4];
-          const ty = item.transform[5];
-          const fontHeight = item.transform[3];
-          
-          // pdf.js uses bottom-left origin for y.
-          const pdfY = unscaledViewportRef.current.height - ty;
-          
-          const div = document.createElement('div');
-          div.className = 'pdf-highlight';
-          div.style.left = `${(tx * scale)}px`;
-          div.style.top = `${(pdfY - fontHeight) * scale}px`;
-          div.style.width = `${item.width * scale}px`;
-          div.style.height = `${fontHeight * scale}px`;
-          overlay.appendChild(div);
-        }
-      }
-    } catch (e) {
-      console.error('Highlight error:', e);
-    }
-  };
-
   return (
     <div className="pdf-viewer-container" ref={containerRef}>
-      {loading && <div className="pdf-loading">Loading PDF...</div>}
       {error && <div className="pdf-error">{error}</div>}
-      
+
       <div className="pdf-controls">
-        <button 
+        <button
           onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
           disabled={currentPage <= 1 || loading}
           className="btn-secondary"
         >
-          Previous
+          ← Prev
         </button>
         <span className="pdf-page-info">
-          Page {currentPage} of {numPages || '?'}
+          {loading ? 'Loading...' : `Page ${currentPage} of ${numPages}`}
         </span>
-        <button 
+        <button
           onClick={() => setCurrentPage(p => Math.min(numPages, p + 1))}
           disabled={currentPage >= numPages || loading}
           className="btn-secondary"
         >
-          Next
+          Next →
         </button>
       </div>
+
+      {highlightQuote && !loading && (
+        <div className="pdf-highlight-status">
+          {highlightCount > 0
+            ? `✓ ${highlightCount} span${highlightCount !== 1 ? 's' : ''} highlighted`
+            : '⚠ Quote spans multiple pages or is not on this page'}
+        </div>
+      )}
+
+      {!highlightQuote && !loading && (
+        <div className="pdf-hint">
+          Click "View in document" on any clause to highlight it here
+        </div>
+      )}
 
       <div className="pdf-canvas-wrapper">
         <canvas ref={canvasRef} className="pdf-canvas" />
