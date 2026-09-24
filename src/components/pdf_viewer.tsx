@@ -44,7 +44,7 @@ function findHighlightRects(items: TextItem[], searchText: string, scale: number
 
   // Build a flat text and a map from char index → item index
   let flat = '';
-  const charToItem: { itemIdx: number; charIdx: number }[] = [];
+  const tokenPositionMap: { itemIdx: number; charIdx: number }[] = [];
 
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
@@ -52,12 +52,12 @@ function findHighlightRects(items: TextItem[], searchText: string, scale: number
     const start = flat.length;
     flat += item.str;
     for (let c = 0; c < item.str.length; c++) {
-      charToItem.push({ itemIdx: i, charIdx: c });
+      tokenPositionMap.push({ itemIdx: i, charIdx: c });
     }
     // Add a space between items if needed for word boundary matching
     if (!item.str.endsWith(' ') && i < items.length - 1) {
       flat += ' ';
-      charToItem.push({ itemIdx: i, charIdx: item.str.length - 1 });
+      tokenPositionMap.push({ itemIdx: i, charIdx: item.str.length - 1 });
     }
   }
 
@@ -85,8 +85,8 @@ function findHighlightRects(items: TextItem[], searchText: string, scale: number
 
   // Find which items are covered by [matchStart, matchEnd]
   const coveredItems = new Set<number>();
-  for (let c = matchStart; c < matchEnd && c < charToItem.length; c++) {
-    coveredItems.add(charToItem[c].itemIdx);
+  for (let c = matchStart; c < matchEnd && c < tokenPositionMap.length; c++) {
+    coveredItems.add(tokenPositionMap[c].itemIdx);
   }
 
   // Group into contiguous runs (same item) and compute rects

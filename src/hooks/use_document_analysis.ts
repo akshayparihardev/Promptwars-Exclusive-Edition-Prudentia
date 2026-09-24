@@ -218,6 +218,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [qaHistory, setQaHistory] = useState<QAEntry[]>([]);
   const [extractedPdfText, setExtractedPdfText] = useState<string>('');
+  const [analysisStatus, setAnalysisStatus] = useState<string>('');
 
   const analyzeDocument = useCallback(async (file: File) => {
     setPhase('uploading');
