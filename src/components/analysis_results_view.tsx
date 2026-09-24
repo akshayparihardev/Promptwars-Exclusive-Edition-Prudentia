@@ -23,6 +23,15 @@ export function AnalysisResultsView({ analysis, fileName, qaHistory, onAskQuesti
 
   const s = analysis.offer_summary;
 
+  // Build document text from all clause exact_quotes for client-side verification.
+  // Since Gemini extracts these verbatim from the PDF via native vision, this gives
+  // the quote verifier a real corpus to match against without needing a separate
+  // text extraction step.
+  const documentText = analysis.clauses
+    .map((c) => c.exact_quote)
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div id="prudentia-results-view">
       <header>
@@ -77,7 +86,7 @@ export function AnalysisResultsView({ analysis, fileName, qaHistory, onAskQuesti
           <section id="clauses-section" aria-label="Clause risk analysis">
             <h2>{analysis.clauses.length} clause{analysis.clauses.length !== 1 ? 's' : ''} identified</h2>
             {analysis.clauses.map((clause) => (
-              <ClauseRiskCard key={clause.id} clause={clause} documentText="" />
+              <ClauseRiskCard key={clause.id} clause={clause} documentText={documentText} />
             ))}
           </section>
 

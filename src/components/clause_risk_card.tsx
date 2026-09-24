@@ -3,7 +3,7 @@ import type { OfferClause } from '../logic/analysis_schema_validator';
 import { StatuteCitationPanel } from './statute_citation_panel';
 import { ConsequenceScenarioPanel } from './consequence_scenario_panel';
 import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator';
-import { verifyQuoteInDocument } from '../logic/document_quote_verifier';
+import { verifyQuoteInDocument, verifyNumbers } from '../logic/document_quote_verifier';
 import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher';
 
 interface ClauseRiskCardProps {
@@ -19,6 +19,10 @@ export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): R
   const rangeComparisons = clause.key_numbers
     ? buildRangeComparisonsForClause(clause.clause_type, clause.key_numbers)
     : [];
+
+  const numberWarning = clause.key_numbers
+    ? verifyNumbers(clause.exact_quote ?? '', clause.key_numbers)
+    : null;
 
   const concernIcons: Record<string, string> = { significant: '⚠', moderate: '◈', minor: '✓' };
 
@@ -59,6 +63,11 @@ export function ClauseRiskCard({ clause, documentText }: ClauseRiskCardProps): R
             )}
           </div>
           <p className="quote-text">"{clause.exact_quote}"</p>
+          {numberWarning && (
+            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-moderate)', marginTop: 'var(--space-2)', fontWeight: 600 }}>
+              {numberWarning}
+            </p>
+          )}
         </div>
       )}
 

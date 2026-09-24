@@ -76,6 +76,52 @@ function computeOverlapRatio(a: string, b: string): number {
 }
 
 /**
+ * Checks if key_numbers values are consistent with the exact_quote text.
+ * If the quote says "60 days" but key_numbers.notice_days is 30, this catches it.
+ *
+ * @param exactQuote - The verbatim quote from the clause
+ * @param keyNumbers - The structured numbers extracted by the LLM
+ * @returns A warning string if inconsistency found, null if consistent
+ */
+export function verifyNumbers(
+  exactQuote: string,
+  keyNumbers: { duration_months: number | null; amount_inr: number | null; notice_days: number | null }
+): string | null {
+  if (!exactQuote || !keyNumbers) return null;
+
+  const numsInQuote = Array.from(exactQuote.matchAll(/\d+/g)).map((m) => m[0]);
+  if (numsInQuote.length === 0) return null;
+
+  const warnings: string[] = [];
+
+  if (keyNumbers.duration_months != null) {
+    const dStr = String(keyNumbers.duration_months);
+    if (!numsInQuote.includes(dStr)) {
+      warnings.push(`Duration (${dStr} months) not found in quoted text`);
+    }
+  }
+
+  if (keyNumbers.notice_days != null) {
+    const nStr = String(keyNumbers.notice_days);
+    if (!numsInQuote.includes(nStr)) {
+      warnings.push(`Notice period (${nStr} days) not found in quoted text`);
+    }
+  }
+
+  if (keyNumbers.amount_inr != null) {
+    const aStr = String(keyNumbers.amount_inr);
+    const aDigits = aStr.replace(/0+$/, '');
+    if (!numsInQuote.includes(aStr) && !numsInQuote.some((n) => n.includes(aDigits) && aDigits.length >= 2)) {
+      warnings.push(`Amount (INR ${keyNumbers.amount_inr.toLocaleString('en-IN')}) not found in quoted text`);
+    }
+  }
+
+  return warnings.length > 0
+    ? `Number consistency warning: ${warnings.join('; ')}. The extracted numbers may not match the exact quote.`
+    : null;
+}
+
+/**
  * Verifies whether an exact_quote appears in the document text.
  *
  * Strategy:
