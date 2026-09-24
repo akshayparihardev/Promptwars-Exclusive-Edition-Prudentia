@@ -9,7 +9,7 @@ import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher';
 interface ClauseRiskCardProps {
   clause: OfferClause;
   documentText: string;
-  onViewInDocument?: (page: number, quote: string) => void;
+  onViewInDocument?: (page: number | undefined, quote: string) => void;
 }
 
 export function ClauseRiskCard({ clause, documentText, onViewInDocument }: ClauseRiskCardProps): React.ReactElement {
@@ -64,6 +64,15 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
             )}
           </div>
           <p className="quote-text">"{clause.exact_quote}"</p>
+          {onViewInDocument && (
+            <button
+              className="btn btn-secondary"
+              style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
+              onClick={() => onViewInDocument(clause.page_hint ?? undefined, clause.exact_quote!)}
+            >
+              View in document
+            </button>
+          )}
           {numberWarning && (
             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-moderate)', marginTop: 'var(--space-2)', fontWeight: 600 }}>
               {numberWarning}

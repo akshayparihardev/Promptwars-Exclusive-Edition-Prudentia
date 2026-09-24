@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import './pdf_viewer.css';
 
@@ -49,8 +49,7 @@ function findHighlightRects(items: TextItem[], searchText: string, scale: number
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
     if (!item.str) continue;
-    const start = flat.length;
-    flat += item.str;
+        flat += item.str;
     for (let c = 0; c < item.str.length; c++) {
       tokenPositionMap.push({ itemIdx: i, charIdx: c });
     }

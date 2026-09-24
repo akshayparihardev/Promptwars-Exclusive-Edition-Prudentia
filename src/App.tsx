@@ -95,7 +95,7 @@ export default function App(): React.ReactElement {
             qaHistory={qaHistory}
             onAskQuestion={askQuestion}
             onReset={reset}
-            onViewInDocument={(page, quote) => {
+            onViewInDocument={(page: number | undefined, quote: string) => {
               setTargetPage(page);
               setHighlightQuote(quote);
             }}

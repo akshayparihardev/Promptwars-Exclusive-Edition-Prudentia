@@ -1,12 +1,10 @@
-import React from 'react';
 import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
 import './risk_summary_dashboard.css';
 
 export function RiskSummaryDashboard({ analysis }: { analysis: OfferLetterAnalysis }) {
   const significant = analysis.clauses.filter(c => c.concern_level === 'significant').length;
   const moderate = analysis.clauses.filter(c => c.concern_level === 'moderate').length;
-  const minor = analysis.clauses.filter(c => c.concern_level === 'minor').length;
-  
+    
   const totalStatutes = new Set(
     analysis.clauses.flatMap(c => (c.applicable_law || []).map(l => l.act + l.section))
   ).size;

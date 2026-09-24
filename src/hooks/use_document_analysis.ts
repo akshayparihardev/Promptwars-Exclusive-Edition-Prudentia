@@ -58,6 +58,8 @@ export interface UseDocumentAnalysisReturn {
   extractedPdfText: string;
   /** The original File object uploaded. */
   originalFile: File | null;
+  /** Human-readable status message during analysis. */
+  analysisStatus: string;
   /** Triggers a new analysis for the given file. */
   analyzeDocument: (file: File) => Promise<void>;
   /** Asks a question against the current analysis. */
@@ -218,7 +220,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [qaHistory, setQaHistory] = useState<QAEntry[]>([]);
   const [extractedPdfText, setExtractedPdfText] = useState<string>('');
-  const [analysisStatus, setAnalysisStatus] = useState<string>('');
+  const [analysisStatus] = useState<string>('');
 
   const analyzeDocument = useCallback(async (file: File) => {
     setPhase('uploading');
@@ -346,8 +348,10 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
     analysis,
     error,
     fileName,
+    originalFile,
     qaHistory,
     extractedPdfText,
+    analysisStatus,
     analyzeDocument,
     askQuestion,
     reset,

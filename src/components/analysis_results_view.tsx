@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
 import { ClauseRiskCard } from './clause_risk_card';
-import { RiskSummaryDashboard } from './risk_summary_dashboard';
 import { LawyerConsultationExportButton } from './lawyer_consultation_export_button';
 import type { QAEntry } from '../hooks/use_document_analysis';
 
@@ -13,9 +12,10 @@ interface AnalysisResultsViewProps {
   qaHistory: QAEntry[];
   onAskQuestion: (q: string) => void;
   onReset: () => void;
+  onViewInDocument?: (page: number | undefined, quote: string) => void;
 }
 
-export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHistory, onAskQuestion, onReset }: AnalysisResultsViewProps): React.ReactElement {
+export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHistory, onAskQuestion, onReset, onViewInDocument }: AnalysisResultsViewProps): React.ReactElement {
   const [qaInput, setQaInput] = useState('');
 
   const handleQaSubmit = (e: React.FormEvent) => {
@@ -90,7 +90,7 @@ export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHi
           <section id="clauses-section" aria-label="Clause risk analysis">
             <h2>{analysis.clauses.length} clause{analysis.clauses.length !== 1 ? 's' : ''} identified</h2>
             {analysis.clauses.map((clause) => (
-              <ClauseRiskCard key={clause.id} clause={clause} documentText={documentText} />
+              <ClauseRiskCard key={clause.id} clause={clause} documentText={documentText} onViewInDocument={onViewInDocument} />
             ))}
           </section>
 
