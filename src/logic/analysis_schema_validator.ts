@@ -219,7 +219,7 @@ function getValidator(): ValidateFunction {
   if (!_compiledValidator) {
     _compiledValidator = ajv.compile(offerLetterAnalysisSchema);
   }
-  return _compiledValidator;
+  return _compiledValidator!;
 }
 
 // ─── Validation result type ───────────────────────────────────────────────────
