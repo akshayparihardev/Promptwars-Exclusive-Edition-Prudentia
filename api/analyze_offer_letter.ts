@@ -276,7 +276,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     if (!validationResult.valid) {
       res.status(422).json({
         error: 'Gemini output did not conform to the required analysis schema.',
-        validation_errors: validationResult.errors,
+        validation_errors: (validationResult as any).errors,
         raw_output_preview:
           JSON.stringify(rawOutput)?.slice(0, 500) ?? '(unparseable)',
       });
