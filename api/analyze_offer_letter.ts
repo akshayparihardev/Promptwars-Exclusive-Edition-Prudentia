@@ -32,8 +32,10 @@ import {
   isPartiallyValid,
   type OfferLetterAnalysis,
 } from '../src/logic/analysis_schema_validator.js';
-import { INDIAN_STATUTE_REFERENCE } from '../src/data/indian_statute_reference.js';
-import { buildStatuteContextForPrompt, type ClauseType } from '../src/logic/clause_to_statute_matcher.js';
+// @ts-ignore
+import { INDIAN_STATUTE_REFERENCE } from '../src/data/indian_statute_reference';
+// @ts-ignore
+import { buildStatuteContextForPrompt, type ClauseType } from '../src/logic/clause_to_statute_matcher';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

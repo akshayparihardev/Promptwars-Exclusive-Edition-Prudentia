@@ -14,8 +14,10 @@
  * Statute keys must match keys in indian_statute_reference.ts.
  */
 
-import type { StatuteKey } from '../data/indian_statute_reference.js';
-import { INDIAN_STATUTE_REFERENCE, getStatuteSummaryForPrompt } from '../data/indian_statute_reference.js';
+// @ts-ignore
+import type { StatuteKey } from '../data/indian_statute_reference';
+// @ts-ignore
+import { INDIAN_STATUTE_REFERENCE, getStatuteSummaryForPrompt } from '../data/indian_statute_reference';
 
 /** All clause types the system recognises. */
 export type ClauseType =
