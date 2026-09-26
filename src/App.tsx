@@ -1,5 +1,4 @@
-import React, { Suspense } from 'react';
-import { useState } from 'react';
+import React, { Suspense, useCallback, useState } from 'react';
 import { useDocumentAnalysis } from './hooks/use_document_analysis.js';
 import { DocumentUploadScreen } from './components/document_upload_screen.js';
 import { AnalysisResultsView } from './components/analysis_results_view.js';
@@ -34,6 +33,13 @@ export default function App(): React.ReactElement {
 
   const [targetPage, setTargetPage] = useState<number | undefined>(undefined);
   const [highlightQuote, setHighlightQuote] = useState<string | undefined>(undefined);
+
+  // Stable identity so the memoised clause cards don't all re-render each time
+  // "View in document" updates the highlight.
+  const handleViewInDocument = useCallback((page: number | undefined, quote: string) => {
+    setTargetPage(page);
+    setHighlightQuote(quote);
+  }, []);
 
   const isProcessing = phase === 'uploading' || phase === 'analyzing' || phase === 'validating';
 
@@ -81,10 +87,7 @@ export default function App(): React.ReactElement {
             qaHistory={qaHistory}
             onAskQuestion={askQuestion}
             onReset={reset}
-            onViewInDocument={(page: number | undefined, quote: string) => {
-              setTargetPage(page);
-              setHighlightQuote(quote);
-            }}
+            onViewInDocument={handleViewInDocument}
           />
         }
         rightPane={

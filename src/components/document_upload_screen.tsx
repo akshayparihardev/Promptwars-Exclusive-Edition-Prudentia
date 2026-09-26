@@ -1,8 +1,9 @@
 import React, { useRef, useState, useCallback } from 'react';
 import { IconFileText, IconAlertTriangle, IconCheck } from './icons.js';
+import { DEFAULT_LANGUAGE, EXPLANATION_LANGUAGES } from '../logic/explanation_language.js';
 
 interface DocumentUploadScreenProps {
-  onFileSelected: (file: File) => void;
+  onFileSelected: (file: File, languageCode: string) => void;
 }
 
 const MAX_SIZE_MB = 3;
@@ -11,6 +12,7 @@ export function DocumentUploadScreen({ onFileSelected }: DocumentUploadScreenPro
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [languageCode, setLanguageCode] = useState(DEFAULT_LANGUAGE.code);
 
   const validateAndSubmit = useCallback((file: File) => {
     setFileError(null);
@@ -28,8 +30,8 @@ export function DocumentUploadScreen({ onFileSelected }: DocumentUploadScreenPro
       setFileError(`File is too large (maximum ${MAX_SIZE_MB} MB). Try printing it to a smaller PDF.`);
       return;
     }
-    onFileSelected(file);
-  }, [onFileSelected]);
+    onFileSelected(file, languageCode);
+  }, [onFileSelected, languageCode]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -54,6 +56,7 @@ export function DocumentUploadScreen({ onFileSelected }: DocumentUploadScreenPro
       </header>
       <main>
         <section aria-labelledby="upload-heading">
+          <h2 id="upload-heading" className="sr-only">Upload your offer letter</h2>
           <div
             id="upload-drop-zone"
             role="button" tabIndex={0}
@@ -70,6 +73,20 @@ export function DocumentUploadScreen({ onFileSelected }: DocumentUploadScreenPro
             <span className="upload-meta">
               PDF only · Not stored · <span className="upload-size-limit">Max {MAX_SIZE_MB} MB</span>
             </span>
+          </div>
+          <div className="language-picker">
+            <label htmlFor="explanation-language">Explain results in</label>
+            <select
+              id="explanation-language"
+              value={languageCode}
+              onChange={(e) => setLanguageCode(e.target.value)}
+            >
+              {EXPLANATION_LANGUAGES.map((lang) => (
+                <option key={lang.code} value={lang.code}>
+                  {lang.code === DEFAULT_LANGUAGE.code ? lang.label : `${lang.nativeLabel} (${lang.label})`}
+                </option>
+              ))}
+            </select>
           </div>
           {fileError && (
             <p id="upload-error" role="alert" aria-live="assertive">
@@ -88,7 +105,7 @@ export function DocumentUploadScreen({ onFileSelected }: DocumentUploadScreenPro
             </li>
             <li>
               <span className="feature-icon"><IconCheck size={13} /></span>
-              <span><strong>Gives inconsistent answers on retry</strong> because nothing is grounded to a fixed reference. Prudentia's statute-to-clause mapping is deterministic.</span>
+              <span><strong>Can't prove where it read something.</strong> Every flagged clause in Prudentia comes with its exact quote, clause number and page, independently verified against your PDF and highlighted in the original with one click.</span>
             </li>
             <li>
               <span className="feature-icon"><IconCheck size={13} /></span>
@@ -97,6 +114,10 @@ export function DocumentUploadScreen({ onFileSelected }: DocumentUploadScreenPro
             <li>
               <span className="feature-icon"><IconCheck size={13} /></span>
               <span><strong>Cannot tell you what happens if a clause is triggered.</strong> Prudentia generates consequence scenarios with outcome likelihood for each clause.</span>
+            </li>
+            <li>
+              <span className="feature-icon"><IconCheck size={13} /></span>
+              <span><strong>Explains in English by default.</strong> Prudentia can explain every clause in Hindi, Bengali, Marathi, Tamil, Telugu or Kannada — while keeping the legal quote verbatim so it can still be verified.</span>
             </li>
           </ul>
         </section>

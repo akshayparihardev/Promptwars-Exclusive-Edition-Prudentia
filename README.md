@@ -5,7 +5,7 @@
 [![Model](https://img.shields.io/badge/Model-Gemini_2.5_Flash-8A2BE2?style=flat-square&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 [![Stack](https://img.shields.io/badge/Stack-React_19_%7C_Vite_%7C_TypeScript-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![Deployment](https://img.shields.io/badge/Deployed_on-Vercel-black?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com/)
-[![Tests](https://img.shields.io/badge/Tests-150_passing-brightgreen?style=flat-square&logo=vitest&logoColor=white)](#-test-coverage)
+[![Tests](https://img.shields.io/badge/Tests-172_passing-brightgreen?style=flat-square&logo=vitest&logoColor=white)](#-test-coverage)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](#)
 
 Built for **PromptWars: Virtual (Exclusive Edition) — Hack2Skill**  
@@ -18,15 +18,14 @@ Built for **PromptWars: Virtual (Exclusive Edition) — Hack2Skill**
 1. [The Problem](#-the-problem)
 2. [What Prudentia Does](#-what-prudentia-does)
 3. [Why Not Just Use ChatGPT?](#-why-not-just-use-chatgpt)
-4. [How It Works](#-how-it-works)
-5. [What the Analysis Produces](#-what-the-analysis-produces)
-6. [Indian Law Grounding](#-indian-law-grounding)
-7. [Architecture](#-architecture)
-8. [Test Coverage](#-test-coverage)
-9. [Quick Start](#-quick-start)
-10. [Deployment Guide](#-deployment-guide)
-11. [Project Structure](#-project-structure)
-12. [Design Principles](#-design-principles)
+4. [Problem Statement Coverage](#-problem-statement-coverage)
+5. [How It Works](#-how-it-works)
+6. [What the Analysis Produces](#-what-the-analysis-produces)
+7. [Indian Law Grounding](#-indian-law-grounding)
+8. [Architecture](#-architecture)
+9. [Test Coverage](#-test-coverage)
+10. [Quick Start](#-quick-start)
+11. [Design Principles](#-design-principles)
 
 ---
 
@@ -59,6 +58,7 @@ Here is what the analysis covers for each detected clause:
 |---|---|
 | **Plain English explanation** | What this clause actually says, in language a 22-year-old can understand |
 | **Exact quote from your document** | The verbatim text Prudentia read — you can verify it yourself |
+| **Clause & page reference** | Where it sits in the original, e.g. *Clause 8.2 · Page 14* — one click highlights it in the PDF |
 | **Concern level** | Significant / Moderate / Minor — colour-coded and rationale-backed |
 | **Applicable Indian statutes** | The real Act name and section number that governs this clause |
 | **Consequence scenarios** | What happens if this clause is triggered — step by step, with financial estimates |
@@ -72,7 +72,8 @@ After the clause analysis, you also get:
 - 📋 **Consultation questions** — document-specific questions to raise with a lawyer
 - 💬 **Q&A** — ask any plain-language question, get an instant answer from the analysis
 - 🖨️ **Lawyer briefing note** — a printable, formatted document to bring to a paid consultation
-- 📄 **PDF viewer with highlights** — see every quoted clause highlighted in yellow in your original document
+- 📄 **PDF viewer with highlights** — see every quoted clause highlighted in your original document
+- 🌐 **Explanations in 7 languages** — English, Hindi, Bengali, Marathi, Tamil, Telugu or Kannada; the legal quote always stays verbatim so it can still be verified
 
 ---
 
@@ -110,6 +111,43 @@ After using Prudentia, you receive a formatted briefing note with all clause sum
 ### 6. ChatGPT applies US/UK legal frameworks by default
 
 Non-compete clauses that are enforceable in the USA are **void** in India under ICA §27. Bond penalties that seem valid in other countries are subject to India's "reasonable compensation" doctrine under §73-74. Prudentia is built exclusively for Indian employment law.
+
+---
+
+## 🧭 Problem Statement Coverage
+
+### Who, what, and why
+
+| | |
+|---|---|
+| **Who is the user?** | An Indian engineering student or early-career professional reading their first employment offer letter — usually without access to a lawyer, often under pressure to sign within days. |
+| **What are they struggling with?** | Clauses that carry real financial and career risk — service bonds, post-employment non-competes, asymmetric notice periods, IP assignment — written in legalese, with no way to tell what is normal, what is enforceable under Indian law, or what to ask before signing. |
+| **Why does GenAI make it meaningfully better?** | Gemini reads the PDF natively and explains each clause in plain language (in 7 languages) — but every claim is grounded in verbatim Indian statute text and checked against the source PDF, so the user gets an explanation they can *verify*, not just trust. |
+
+### Use cases from the problem statement
+
+| Problem statement use case | How Prudentia addresses it | Where |
+|---|---|---|
+| Simplifying complex legal documents | Plain-language explanation of every clause, optionally in Hindi, Bengali, Marathi, Tamil, Telugu or Kannada | `plain_english` in the schema; `src/logic/explanation_language.ts` |
+| Comparing contracts, agreements, or policies | Each clause's key numbers (bond duration and amount, notice period, probation) are compared against typical Indian market ranges | `src/logic/clause_range_comparator.ts` |
+| Highlighting important clauses, obligations, risks, or inconsistencies | Every clause gets a concern level with a statute-backed rationale; a number-consistency check flags when an extracted figure doesn't match the quoted text | `clause_risk_card.tsx`, `verifyNumbers()` |
+| Answering questions based on provided legal documents | Q&A answers from the analysed document only, citing the clause and page — never from general knowledge | `use_document_analysis.ts` |
+| Helping users understand their options and next steps | Consequence scenarios walk through what happens if a clause is triggered, with outcome likelihood and financial estimates | `consequence_scenario_panel.tsx` |
+| Generating summaries, checklists, or other actionable outputs | Offer summary (company, role, CTC, joining date) plus a printable lawyer briefing note | `lawyer_consultation_export_builder.ts` |
+| Helping users prepare questions for a legal professional | Document-specific consultation questions, included in the briefing note | `consultation_questions` in the schema |
+
+### Organizer requirements
+
+| Requirement | How it's met |
+|---|---|
+| Not a basic PDF Q&A chatbot or generic summary | Clause-by-clause structured analysis with statute grounding, risk levels, and consequence scenarios |
+| Prevent critical hallucinations (e.g. stating a 30-day notice period when the document says 60) | Exact quotes are verified against independently extracted PDF text, and extracted numbers are cross-checked against the quote itself |
+| Side-by-side verification with exact clause and page references | Every clause shows *Clause 8.2 · Page 14*; one click highlights the quote in the original PDF alongside the analysis |
+| State "Not enough information provided" instead of guessing | Q&A says exactly that when a topic (e.g. stock options on resignation) isn't in the document; missing information is listed separately |
+| Assist, never replace, professional counsel | Calibrated language enforced in the prompt, a schema-required disclaimer, and document-specific questions to take to a lawyer |
+| "Why not a general-purpose AI assistant?" | Verification (quote, number and page checks), domain grounding (verbatim Indian statutes), trust (no invented citations), and multilingual accessibility |
+
+**Honest limitation:** Prudentia analyses one document at a time. It compares each clause against typical market ranges, but it does not yet compare two uploaded documents side by side.
 
 ---
 
@@ -251,14 +289,19 @@ Prudentia evaluates contracts against a curated, hardcoded dictionary of 8 India
 
 ```
 src/logic/
-├── analysis_schema_validator.ts    # Zod-style strict schema + Ajv validation
+├── analysis_schema_validator.ts    # Strict JSON Schema (Ajv) validation of Gemini output
+├── clause_reference_formatter.ts   # "Clause 8.2 · Page 14" source-location labels
 ├── clause_to_statute_matcher.ts    # Maps clause types → relevant statute keys
 ├── clause_range_comparator.ts      # Determines if key numbers are typical/high/low
 ├── consequence_scenario_formatter.ts # Renders consequence scenarios to readable text
-├── document_quote_verifier.ts      # tokenPositionMap bounding box highlighter + verifyNumbers()
-├── indian_statute_reference.ts     # The 8 hardcoded statutes with verbatim text
+├── document_quote_verifier.ts      # Three-state quote verification + verifyNumbers()
+├── explanation_language.ts         # Supported explanation languages + prompt instruction
 ├── lawyer_consultation_export_builder.ts # Builds the printable HTML briefing note
-└── pdf_text_extractor.ts          # PDF.js wrapper for independent text extraction
+└── pdf_text_extractor.ts           # PDF.js wrapper for independent text extraction
+
+src/data/
+├── indian_statute_reference.ts     # The 8 hardcoded statutes with verbatim text
+└── typical_clause_range_reference.ts # Typical Indian market ranges for key numbers
 
 api/
 └── analyze_offer_letter.ts         # Vercel serverless handler (single request/response)
@@ -268,7 +311,7 @@ api/
 
 ## 🧪 Test Coverage
 
-**150 tests across 10 files — all deterministic logic, no mocking of AI responses.**
+**172 tests across 14 files — all deterministic logic, no mocking of AI responses.**
 
 | Test File | Tests | What It Validates |
 |---|---|---|
@@ -282,9 +325,13 @@ api/
 | `lawyer_consultation_export_builder.test.ts` | 11 | Export HTML structure, statute citations, disclaimer |
 | `indian_statute_reference.test.ts` | 7 | Statute library completeness, text non-empty |
 | `pdf_text_extractor.test.ts` | 3 | PDF.js extraction module exports and interface |
+| `clause_reference_formatter.test.ts` | 9 | "Clause 8.2 · Page 14" labels, heading text stripped, unnumbered clauses |
+| `explanation_language.test.ts` | 7 | Language allow-list, untrusted-input fallback, verbatim-quote prompt rule |
+| `clause_reference_schema.test.ts` | 3 | Optional `clause_reference` field accepted/rejected correctly |
+| `document_quote_verifier_matching.test.ts` | 3 | Fuzzy matching and document-cache correctness |
 
 ```bash
-npm test              # Run all 150 tests
+npm test              # Run all 172 tests
 npm run test:coverage # With coverage report
 ```
 
@@ -362,7 +409,7 @@ The Gemini API call takes 15–25 seconds. The UI tracks distinct phases (`uploa
 **Problem Statement:** AI for Legal Assistance & Access  
 **Repository Size:** < 500 KB (limit: 10 MB)  
 **Model:** Gemini 2.5 Flash, with automatic fallback to 2.5 Flash-Lite / 2.0 Flash  
-**Tests:** 150 passing, 0 failing  
+**Tests:** 172 passing, 0 failing  
 
 ---
 

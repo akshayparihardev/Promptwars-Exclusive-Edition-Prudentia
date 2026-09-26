@@ -53,26 +53,50 @@ function normalise(text: string): string {
   return text.replace(/\s+/g, ' ').trim().toLowerCase();
 }
 
+// Every clause is verified against the same document text, so cache the most
+// recent normalisation rather than re-running it over the whole document once
+// per clause.
+let cachedDocText: string | null = null;
+let cachedNormDoc = '';
+
+function normaliseDocument(documentText: string): string {
+  if (documentText !== cachedDocText) {
+    cachedDocText = documentText;
+    cachedNormDoc = normalise(documentText);
+  }
+  return cachedNormDoc;
+}
+
 /**
  * Computes a simple character-level overlap ratio between two strings.
  * Used for fuzzy matching when exact match fails (e.g., minor OCR differences).
  * Returns a value from 0 (no overlap) to 1 (identical).
+ *
+ * Compares in place (no per-window substring allocation) and prunes: a window
+ * is abandoned once it can no longer beat the best match so far, and the scan
+ * stops on a perfect match. Same result as the exhaustive O(n·m) scan.
  */
 function computeOverlapRatio(a: string, b: string): number {
   if (a.length === 0 || b.length === 0) return 0;
   const shorter = a.length <= b.length ? a : b;
   const longer = a.length > b.length ? a : b;
-  // Sliding window: find the best match of `shorter` within `longer`
+  const n = shorter.length;
   let bestMatch = 0;
-  for (let i = 0; i <= longer.length - shorter.length; i++) {
-    const window = longer.slice(i, i + shorter.length);
+  for (let i = 0; i <= longer.length - n; i++) {
     let matches = 0;
-    for (let j = 0; j < shorter.length; j++) {
-      if (shorter[j] === window[j]) matches++;
+    for (let j = 0; j < n; j++) {
+      if (shorter[j] === longer[i + j]) {
+        matches++;
+      } else if (matches + (n - j - 1) <= bestMatch) {
+        break;
+      }
     }
-    bestMatch = Math.max(bestMatch, matches);
+    if (matches > bestMatch) {
+      bestMatch = matches;
+      if (bestMatch === n) break;
+    }
   }
-  return bestMatch / shorter.length;
+  return bestMatch / n;
 }
 
 /**
@@ -148,7 +172,7 @@ export function verifyQuoteInDocument(
   }
 
   const normQuote = normalise(exactQuote);
-  const normDoc = normalise(documentText);
+  const normDoc = normaliseDocument(documentText);
 
   // 1. Exact match
   if (normDoc.includes(normQuote)) {

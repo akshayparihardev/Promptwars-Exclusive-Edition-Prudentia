@@ -47,6 +47,8 @@ export interface OfferClause {
   plain_english: string;
   exact_quote: string;
   page_hint: number | null;
+  /** Clause/section number as printed in the document ("8.2", "Clause 4"); null if unnumbered. */
+  clause_reference?: string | number | null;
   concern_level: 'minor' | 'moderate' | 'significant';
   concern_rationale: string;
   key_numbers: KeyNumbers;
@@ -136,6 +138,8 @@ const offerLetterAnalysisSchema = {
           plain_english: { type: 'string', minLength: 1 },
           exact_quote: { type: 'string', minLength: 1 },
           page_hint: { anyOf: [{ type: 'number' }, { type: 'null' }] },
+          // Optional: not every document numbers its clauses.
+          clause_reference: { anyOf: [{ type: 'string' }, { type: 'number' }, { type: 'null' }] },
           concern_level: {
             type: 'string',
             enum: ['minor', 'moderate', 'significant'],

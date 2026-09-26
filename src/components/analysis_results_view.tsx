@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js';
 import { ClauseRiskCard } from './clause_risk_card.js';
 import { LawyerConsultationExportButton } from './lawyer_consultation_export_button.js';
@@ -31,11 +31,10 @@ export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHi
   // This is architecturally critical: we verify Gemini's claims against text
   // parsed independently from the PDF, not against Gemini's own output.
   // Falls back to concatenated LLM quotes if PDF.js extraction failed.
-  const fallbackQuoteText = analysis.clauses
-    .map((c) => c.exact_quote)
-    .filter(Boolean)
-    .join(' ');
-  const documentText = extractedPdfText || fallbackQuoteText;
+  const documentText = useMemo(
+    () => extractedPdfText || analysis.clauses.map((c) => c.exact_quote).filter(Boolean).join(' '),
+    [extractedPdfText, analysis.clauses]
+  );
 
   return (
     <div id="prudentia-results-view">
@@ -97,7 +96,7 @@ export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHi
 
           {analysis.unanswered_questions.length > 0 && (
             <section id="unanswered-questions" aria-label="Unanswered questions">
-              <h2><IconAlertTriangle size={14} /> Information Not Found in Document</h2>
+              <h2><IconAlertTriangle size={14} /> Not enough information provided in this document</h2>
               <ul>
                 {analysis.unanswered_questions.map((q, i) => <li key={i}>{q}</li>)}
               </ul>

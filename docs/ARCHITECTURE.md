@@ -8,7 +8,7 @@ Prudentia is a single-page React application with a single Vercel serverless bac
 Browser (React + Vite)
     │
     │  POST /api/analyze_offer_letter
-    │  { pdf_base64, mime_type }
+    │  { pdf_base64, mime_type, language }
     ▼
 Vercel Serverless Function
     │
@@ -75,7 +75,8 @@ User uploads PDF
       ▼
 use_document_analysis.ts (hook)
   → FileReader.readAsDataURL → base64
-  → fetch('/api/analyze_offer_letter', { pdf_base64, mime_type })
+  → PDF.js text extraction starts in parallel (awaited only when results arrive)
+  → fetch('/api/analyze_offer_letter', { pdf_base64, mime_type, language })
       │
       ▼
 api/analyze_offer_letter.ts (Vercel fn)

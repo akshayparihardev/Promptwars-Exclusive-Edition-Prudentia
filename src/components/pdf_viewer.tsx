@@ -244,12 +244,27 @@ export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) 
     renderPage();
   }, [renderPage]);
 
+  // Re-render on resize, but debounced and only when the width actually changed:
+  // a full canvas re-render per ResizeObserver callback is wasteful while the
+  // window is being dragged, and the observer's initial callback is redundant
+  // with the render effect above.
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
-    const observer = new ResizeObserver(() => renderPage());
+    let lastWidth = container.clientWidth;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const observer = new ResizeObserver(() => {
+      const width = container.clientWidth;
+      if (width === lastWidth) return;
+      lastWidth = width;
+      clearTimeout(timer);
+      timer = setTimeout(() => { renderPage(); }, 150);
+    });
     observer.observe(container);
-    return () => observer.disconnect();
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
   }, [renderPage]);
 
   return (

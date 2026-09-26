@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 import type { OfferClause } from '../logic/analysis_schema_validator.js';
 import { StatuteCitationPanel } from './statute_citation_panel.js';
 import { ConsequenceScenarioPanel } from './consequence_scenario_panel.js';
 import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator.js';
 import { verifyQuoteInDocument, verifyNumbers } from '../logic/document_quote_verifier.js';
 import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher.js';
+import { formatSourceLocation } from '../logic/clause_reference_formatter.js';
 import { IconAlertTriangle, IconInfo, IconCheck, IconChevronDown, IconScale, IconArrowRight, IconExternalLink } from './icons.js';
 
 interface ClauseRiskCardProps {
@@ -13,18 +14,26 @@ interface ClauseRiskCardProps {
   onViewInDocument?: (page: number | undefined, quote: string) => void;
 }
 
-export function ClauseRiskCard({ clause, documentText, onViewInDocument }: ClauseRiskCardProps): React.ReactElement {
+function ClauseRiskCardView({ clause, documentText, onViewInDocument }: ClauseRiskCardProps): React.ReactElement {
   const [statuteOpen, setStatuteOpen] = useState(false);
   const [scenarioOpen, setScenarioOpen] = useState(false);
 
-  const quoteResult = verifyQuoteInDocument(clause.exact_quote ?? '', documentText);
-  const rangeComparisons = clause.key_numbers
-    ? buildRangeComparisonsForClause(clause.clause_type, clause.key_numbers)
-    : [];
+  // Quote verification scans the whole document text, so it's memoised:
+  // toggling a panel on this card shouldn't redo it.
+  const quoteResult = useMemo(
+    () => verifyQuoteInDocument(clause.exact_quote ?? '', documentText),
+    [clause.exact_quote, documentText]
+  );
+  const rangeComparisons = useMemo(
+    () => (clause.key_numbers ? buildRangeComparisonsForClause(clause.clause_type, clause.key_numbers) : []),
+    [clause.clause_type, clause.key_numbers]
+  );
+  const numberWarning = useMemo(
+    () => (clause.key_numbers ? verifyNumbers(clause.exact_quote ?? '', clause.key_numbers) : null),
+    [clause.exact_quote, clause.key_numbers]
+  );
 
-  const numberWarning = clause.key_numbers
-    ? verifyNumbers(clause.exact_quote ?? '', clause.key_numbers)
-    : null;
+  const sourceLocation = formatSourceLocation(clause.clause_reference, clause.page_hint);
 
   const ConcernIcon = clause.concern_level === 'significant' ? IconAlertTriangle
     : clause.concern_level === 'moderate' ? IconInfo : IconCheck;
@@ -45,9 +54,7 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
         <div className="clause-title-group">
           <span className="clause-type-badge">{getClauseTypeLabel(clause.clause_type)}</span>
           <h3>{clause.title}</h3>
-          {clause.page_hint && (
-            <span className="clause-page-hint">Page {clause.page_hint}</span>
-          )}
+          {sourceLocation && <span className="clause-page-hint">{sourceLocation}</span>}
         </div>
         <span className={`concern-badge ${clause.concern_level}`}>
           <ConcernIcon size={12} /> {clause.concern_level}
@@ -64,16 +71,15 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
             <span className={`quote-status-badge ${quoteStatusClass}`}>
               {QuoteStatusIcon && <QuoteStatusIcon size={13} />} {quoteStatusLabel}
             </span>
-            {clause.page_hint && (
-              <span className="quote-page-ref">Page {clause.page_hint}</span>
-            )}
+            {sourceLocation && <span className="quote-page-ref">{sourceLocation}</span>}
           </div>
           <p className="quote-text">&ldquo;{clause.exact_quote}&rdquo;</p>
           {onViewInDocument && (
             <button
               className="btn-secondary"
               style={{ marginTop: 'var(--space-3)' }}
-              onClick={() => onViewInDocument(clause.page_hint ?? undefined, clause.exact_quote!)}
+              onClick={() => onViewInDocument(clause.page_hint ?? undefined, clause.exact_quote)}
+              aria-label={sourceLocation ? `View ${sourceLocation} in the document` : 'View this clause in the document'}
             >
               <IconExternalLink size={13} /> View in document
             </button>
@@ -122,7 +128,7 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
             className="expandable-panel-trigger"
             aria-expanded={statuteOpen}
             aria-controls={`statute-panel-${clause.id}`}
-            onClick={() => setStatuteOpen(!statuteOpen)}
+            onClick={() => setStatuteOpen((open) => !open)}
             id={`statute-toggle-${clause.id}`}
           >
             <span className="expandable-panel-trigger-label"><IconScale size={14} /> Indian Law References ({clause.applicable_law.length})</span>
@@ -142,7 +148,7 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
             className="expandable-panel-trigger"
             aria-expanded={scenarioOpen}
             aria-controls={`scenario-panel-${clause.id}`}
-            onClick={() => setScenarioOpen(!scenarioOpen)}
+            onClick={() => setScenarioOpen((open) => !open)}
             id={`scenario-toggle-${clause.id}`}
           >
             <span className="expandable-panel-trigger-label"><IconArrowRight size={14} /> What happens if this clause is triggered? ({clause.consequence_scenarios.length})</span>
@@ -158,3 +164,7 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
     </article>
   );
 }
+
+// Memoised so typing in the Q&A box (state local to the parent results view)
+// doesn't re-render — and re-verify — every clause card.
+export const ClauseRiskCard = memo(ClauseRiskCardView);
