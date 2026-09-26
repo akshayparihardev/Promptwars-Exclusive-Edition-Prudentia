@@ -22,11 +22,11 @@
  *   6. Non-authoritative label on all typical range references
  */
 
-import type { OfferLetterAnalysis, OfferClause } from './analysis_schema_validator';
-import { getClauseTypeLabel } from './clause_to_statute_matcher';
-import type { RangeComparisonResult } from './clause_range_comparator';
-import { buildScenariosExportText } from './consequence_scenario_formatter';
-import { formatClauseScenarios } from './consequence_scenario_formatter';
+import type { OfferLetterAnalysis, OfferClause } from './analysis_schema_validator.js';
+import { getClauseTypeLabel } from './clause_to_statute_matcher.js';
+import type { RangeComparisonResult } from './clause_range_comparator.js';
+import { buildScenariosExportText } from './consequence_scenario_formatter.js';
+import { formatClauseScenarios } from './consequence_scenario_formatter.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 

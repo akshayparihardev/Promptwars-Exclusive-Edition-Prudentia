@@ -1,10 +1,10 @@
 import React from 'react';
 import { useState } from 'react';
-import { useDocumentAnalysis } from './hooks/use_document_analysis';
-import { DocumentUploadScreen } from './components/document_upload_screen';
-import { AnalysisResultsView } from './components/analysis_results_view';
-import { TwoPaneLayout } from './components/two_pane_layout';
-import { PdfViewer } from './components/pdf_viewer';
+import { useDocumentAnalysis } from './hooks/use_document_analysis.js';
+import { DocumentUploadScreen } from './components/document_upload_screen.js';
+import { AnalysisResultsView } from './components/analysis_results_view.js';
+import { TwoPaneLayout } from './components/two_pane_layout.js';
+import { PdfViewer } from './components/pdf_viewer.js';
 
 /**
  * Prudentia — AI-powered offer letter analyser for Indian engineering students.

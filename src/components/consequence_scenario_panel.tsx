@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ConsequenceScenario } from '../logic/analysis_schema_validator';
+import type { ConsequenceScenario } from '../logic/analysis_schema_validator.js';
 
 interface ConsequenceScenarioPanelProps {
   scenarios: ConsequenceScenario[];

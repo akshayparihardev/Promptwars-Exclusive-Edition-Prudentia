@@ -12,7 +12,7 @@
  *    Always display alongside applicable_law citations with clearly lower confidence.
  */
 
-import { TYPICAL_RANGES, type RangeKey } from '../data/typical_clause_range_reference';
+import { TYPICAL_RANGES, type RangeKey } from '../data/typical_clause_range_reference.js';
 
 /** Where the extracted value falls relative to the observed-practice range. */
 export type RangePosition = 'within_range' | 'above_range' | 'below_range' | 'no_range_data';

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import type { OfferClause } from '../logic/analysis_schema_validator';
-import { StatuteCitationPanel } from './statute_citation_panel';
-import { ConsequenceScenarioPanel } from './consequence_scenario_panel';
-import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator';
-import { verifyQuoteInDocument, verifyNumbers } from '../logic/document_quote_verifier';
-import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher';
+import type { OfferClause } from '../logic/analysis_schema_validator.js';
+import { StatuteCitationPanel } from './statute_citation_panel.js';
+import { ConsequenceScenarioPanel } from './consequence_scenario_panel.js';
+import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator.js';
+import { verifyQuoteInDocument, verifyNumbers } from '../logic/document_quote_verifier.js';
+import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher.js';
 
 interface ClauseRiskCardProps {
   clause: OfferClause;

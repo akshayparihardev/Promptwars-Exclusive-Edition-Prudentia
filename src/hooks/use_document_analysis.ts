@@ -13,10 +13,10 @@
  */
 
 import { useState, useCallback } from 'react';
-import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
-import { buildNotAddressedResult, verifyQuoteInDocument } from '../logic/document_quote_verifier';
-import type { QuoteVerificationResult } from '../logic/document_quote_verifier';
-import { extractTextFromPdf } from '../logic/pdf_text_extractor';
+import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js';
+import { buildNotAddressedResult, verifyQuoteInDocument } from '../logic/document_quote_verifier.js';
+import type { QuoteVerificationResult } from '../logic/document_quote_verifier.js';
+import { extractTextFromPdf } from '../logic/pdf_text_extractor.js';
 
 // ── State types ──────────────────────────────────────────────────────────────
 

@@ -1,8 +1,8 @@
 import React from 'react';
-import { INDIAN_STATUTE_REFERENCE } from '../data/indian_statute_reference';
-import type { ApplicableLaw } from '../logic/analysis_schema_validator';
-import type { ClauseType } from '../logic/clause_to_statute_matcher';
-import { CLAUSE_TYPE_TO_STATUTE } from '../logic/clause_to_statute_matcher';
+import { INDIAN_STATUTE_REFERENCE } from '../data/indian_statute_reference.js';
+import type { ApplicableLaw } from '../logic/analysis_schema_validator.js';
+import type { ClauseType } from '../logic/clause_to_statute_matcher.js';
+import { CLAUSE_TYPE_TO_STATUTE } from '../logic/clause_to_statute_matcher.js';
 
 interface StatuteCitationPanelProps {
   applicableLaw: ApplicableLaw[];

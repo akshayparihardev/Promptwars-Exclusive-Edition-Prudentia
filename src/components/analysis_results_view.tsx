@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
-import { ClauseRiskCard } from './clause_risk_card';
-import { LawyerConsultationExportButton } from './lawyer_consultation_export_button';
-import type { QAEntry } from '../hooks/use_document_analysis';
+import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js';
+import { ClauseRiskCard } from './clause_risk_card.js';
+import { LawyerConsultationExportButton } from './lawyer_consultation_export_button.js';
+import type { QAEntry } from '../hooks/use_document_analysis.js';
 
 interface AnalysisResultsViewProps {
   analysis: OfferLetterAnalysis;

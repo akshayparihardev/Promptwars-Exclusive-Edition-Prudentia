@@ -14,7 +14,7 @@
  * validated analysis output. Scenario content comes from Gemini; formatting is deterministic.
  */
 
-import type { ConsequenceScenario } from './analysis_schema_validator';
+import type { ConsequenceScenario } from './analysis_schema_validator.js';
 
 /** Display-ready consequence scenario with all fields formatted for the UI. */
 export interface FormattedConsequenceScenario {

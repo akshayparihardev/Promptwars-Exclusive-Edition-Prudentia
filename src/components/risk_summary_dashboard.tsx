@@ -1,4 +1,4 @@
-import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
+import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js';
 import './risk_summary_dashboard.css';
 
 export function RiskSummaryDashboard({ analysis }: { analysis: OfferLetterAnalysis }) {

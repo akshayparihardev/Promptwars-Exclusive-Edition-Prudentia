@@ -15,9 +15,9 @@
  */
 
 // @ts-ignore
-import type { StatuteKey } from '../data/indian_statute_reference';
+import type { StatuteKey } from '../data/indian_statute_reference.js';
 // @ts-ignore
-import { INDIAN_STATUTE_REFERENCE, getStatuteSummaryForPrompt } from '../data/indian_statute_reference';
+import { INDIAN_STATUTE_REFERENCE, getStatuteSummaryForPrompt } from '../data/indian_statute_reference.js';
 
 /** All clause types the system recognises. */
 export type ClauseType =

@@ -1,6 +1,6 @@
 import React from 'react';
-import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator';
-import { printLawyerConsultationExport } from '../logic/lawyer_consultation_export_builder';
+import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js';
+import { printLawyerConsultationExport } from '../logic/lawyer_consultation_export_builder.js';
 
 interface LawyerConsultationExportButtonProps {
   analysis: OfferLetterAnalysis;
