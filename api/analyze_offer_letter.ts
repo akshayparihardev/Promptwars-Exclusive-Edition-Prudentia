@@ -45,7 +45,15 @@ import { buildStatuteContextForPrompt, type ClauseType } from '../src/logic/clau
 // FreeTier"), so a different model name has its own separate daily allowance -
 // falling back to the next model on quota exhaustion is a real mitigation, not
 // just a retry against the same wall. All of these support native PDF vision.
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
+//
+// IMPORTANT: every ID here was confirmed against this account's live
+// GET /v1beta/models list (a free metadata call, no generation quota spent) -
+// a previous version of this list included 'gemini-2.0-flash', which does
+// NOT exist in this API's current model catalog and would 404, silently
+// breaking the fallback chain past whichever model preceded it. Re-verify
+// against that endpoint before changing this list again, rather than
+// guessing a model name.
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.7-flash'];
 const MAX_RETRIES = 1;
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
