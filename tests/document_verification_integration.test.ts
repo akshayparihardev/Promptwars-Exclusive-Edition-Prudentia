@@ -9,7 +9,6 @@
 import { describe, it, expect } from 'vitest';
 import { verifyQuoteInDocument, verifyNumbers } from '../src/logic/document_quote_verifier';
 import { buildRangeComparisonsForClause } from '../src/logic/clause_range_comparator';
-import type { OfferClause } from '../src/logic/analysis_schema_validator';
 
 // Simulated independently-extracted PDF text (what PDF.js would return)
 const EXTRACTED_PDF_TEXT = `

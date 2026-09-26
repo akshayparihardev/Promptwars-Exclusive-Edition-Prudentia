@@ -15,7 +15,10 @@ Vercel Serverless Function
     ├── Statute context injection (deterministic lookup)
     │     indian_statute_reference.ts → CLAUSE_TYPE_TO_STATUTE
     │
-    ├── Gemini 2.5 Flash (native PDF vision)
+    ├── Gemini (native PDF vision, JSON output mode)
+    │     Tries gemini-2.5-flash → gemini-2.5-flash-lite → gemini-2.0-flash
+    │     in order, falling back on rate-limit/quota errors (each model has
+    │     its own free-tier daily quota)
     │     Input:  PDF bytes + statute-enriched prompt
     │     Output: JSON matching OfferLetterAnalysis interface
     │
@@ -133,6 +136,6 @@ src/hooks/use_document_analysis.ts
 - Repository size: < 10MB (node_modules and dist are gitignored)
 - No vector DB, no embeddings, no Docker
 - No PDF storage — ephemeral session only
-- No third-party CSS frameworks — vanilla CSS (design phase pending)
+- No third-party CSS frameworks — vanilla CSS, custom design system in src/index.css
 - Single serverless function — no microservices
 - Max 3 submission attempts — do not deploy until confident in final state

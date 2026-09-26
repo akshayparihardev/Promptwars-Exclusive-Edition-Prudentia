@@ -25,18 +25,18 @@ describe('INDIAN_STATUTE_REFERENCE', () => {
   });
 
   it('contains ICA Section 27 (restraint of trade — critical for non-compete)', () => {
-    const hasIca27 = entries.some(([_, e]) => e.act.includes('Indian Contract Act') && e.section === '27');
+    const hasIca27 = entries.some(([, e]) => e.act.includes('Indian Contract Act') && e.section === '27');
     expect(hasIca27).toBe(true);
   });
 
   it('contains ICA Sections 73 and 74 (damages — critical for bond penalties)', () => {
-    const sections = entries.map(([_, e]) => e.section);
+    const sections = entries.map(([, e]) => e.section);
     expect(sections).toContain('73');
     expect(sections).toContain('74');
   });
 
   it('contains Copyright Act Section 17 (employer IP ownership)', () => {
-    const hasCopyright = entries.some(([_, e]) => e.act.includes('Copyright') && e.section === '17');
+    const hasCopyright = entries.some(([, e]) => e.act.includes('Copyright') && e.section === '17');
     expect(hasCopyright).toBe(true);
   });
 

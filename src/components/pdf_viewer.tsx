@@ -132,11 +132,12 @@ export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) 
   const unscaledHeightRef = useRef<number>(0);
   const renderTaskRef = useRef<any>(null);
 
-  // Load PDF
+  // Load PDF. `loading`/`error` start at their correct values (true/null) via
+  // useState above and don't need resetting here: PdfViewer only ever mounts
+  // fresh per file (App.tsx's phase-based rendering fully unmounts it between
+  // uploads), so a synchronous setState at the top of this effect was dead code.
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError(null);
 
     const load = async () => {
       try {

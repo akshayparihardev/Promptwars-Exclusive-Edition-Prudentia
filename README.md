@@ -135,7 +135,8 @@ User uploads PDF
 │     types → relevant statutes from the reference library │
 │  4. Verbatim statute text injected into system prompt    │
 │     → Gemini cannot hallucinate grounded citations       │
-│  5. Gemini 2.5 Flash called with PDF (native vision)     │
+│  5. Gemini called with PDF (native vision), falling back │
+│     across models on rate-limit/quota errors             │
 │  6. Full JSON validated against strict schema (Ajv)      │
 │     → Auto-retry with repair prompt on failure           │
 │  7. Validated analysis returned as a single JSON        │
@@ -241,7 +242,7 @@ Prudentia evaluates contracts against a curated, hardcoded dictionary of 8 India
 | **Frontend** | React 19 + Vite | Fast, component-based, modern |
 | **Type System** | TypeScript (strict) | Schema contracts enforced at compile time |
 | **Backend** | Vercel Serverless Functions | Zero infrastructure, auto-scaling, cold-start < 1s |
-| **AI Model** | Gemini 2.5 Flash | Native PDF vision — no OCR preprocessing needed |
+| **AI Model** | Gemini 2.5 Flash (+ fallback chain) | Native PDF vision — no OCR preprocessing needed |
 | **PDF Rendering** | pdfjs-dist (CDN worker) | Client-side PDF rendering + text extraction |
 | **Schema Validation** | Ajv (JSON Schema) | Gemini output validated before it reaches the UI |
 | **Testing** | Vitest | Fast, ESM-native, co-located tests |
@@ -360,7 +361,7 @@ The Gemini API call takes 15–25 seconds. The UI tracks distinct phases (`uploa
 **Event:** PromptWars: Virtual (Exclusive Edition) — Hack2Skill  
 **Problem Statement:** AI for Legal Assistance & Access  
 **Repository Size:** < 500 KB (limit: 10 MB)  
-**Model:** Gemini 2.5 Flash  
+**Model:** Gemini 2.5 Flash, with automatic fallback to 2.5 Flash-Lite / 2.0 Flash  
 **Tests:** 150 passing, 0 failing  
 
 ---
