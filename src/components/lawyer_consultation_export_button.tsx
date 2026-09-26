@@ -1,6 +1,7 @@
 import React from 'react';
 import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js';
 import { printLawyerConsultationExport } from '../logic/lawyer_consultation_export_builder.js';
+import { IconExternalLink } from './icons.js';
 
 interface LawyerConsultationExportButtonProps {
   analysis: OfferLetterAnalysis;
@@ -20,7 +21,7 @@ export function LawyerConsultationExportButton({ analysis }: LawyerConsultationE
       onClick={handleExport}
       aria-label="Generate lawyer consultation document"
     >
-      ↗ Export for Lawyer Consultation
+<IconExternalLink size={14} /> Export for Lawyer Consultation
     </button>
   );
 }

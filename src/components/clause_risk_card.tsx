@@ -5,6 +5,7 @@ import { ConsequenceScenarioPanel } from './consequence_scenario_panel.js';
 import { buildRangeComparisonsForClause, getRangePositionLabel } from '../logic/clause_range_comparator.js';
 import { verifyQuoteInDocument, verifyNumbers } from '../logic/document_quote_verifier.js';
 import { getClauseTypeLabel } from '../logic/clause_to_statute_matcher.js';
+import { IconAlertTriangle, IconInfo, IconCheck, IconChevronDown, IconScale, IconArrowRight, IconExternalLink } from './icons.js';
 
 interface ClauseRiskCardProps {
   clause: OfferClause;
@@ -25,14 +26,18 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
     ? verifyNumbers(clause.exact_quote ?? '', clause.key_numbers)
     : null;
 
-  const concernIcons: Record<string, string> = { significant: '⚠', moderate: '◈', minor: '✓' };
+  const ConcernIcon = clause.concern_level === 'significant' ? IconAlertTriangle
+    : clause.concern_level === 'moderate' ? IconInfo : IconCheck;
 
   const quoteStatusClass = quoteResult.quote_status === 'confirmed_in_document' ? 'confirmed'
     : quoteResult.quote_status === 'not_found_in_document' ? 'not-found' : 'not-addressed';
 
-  const quoteStatusLabel = quoteResult.quote_status === 'confirmed_in_document' ? '✓ Verified in document'
-    : quoteResult.quote_status === 'not_found_in_document' ? '⚠ Could not verify in document — review original'
-    : '— Not addressed in document';
+  const QuoteStatusIcon = quoteResult.quote_status === 'confirmed_in_document' ? IconCheck
+    : quoteResult.quote_status === 'not_found_in_document' ? IconAlertTriangle : null;
+
+  const quoteStatusLabel = quoteResult.quote_status === 'confirmed_in_document' ? 'Verified in document'
+    : quoteResult.quote_status === 'not_found_in_document' ? 'Could not verify in document — review original'
+    : 'Not addressed in document';
 
   return (
     <article className="clause-risk-card" data-concern={clause.concern_level} aria-label={`Clause: ${clause.title}`}>
@@ -41,11 +46,11 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
           <span className="clause-type-badge">{getClauseTypeLabel(clause.clause_type)}</span>
           <h3>{clause.title}</h3>
           {clause.page_hint && (
-            <span style={{ fontSize: 'var(--text-xs)', color: '#475569' }}>Page {clause.page_hint}</span>
+            <span className="clause-page-hint">Page {clause.page_hint}</span>
           )}
         </div>
         <span className={`concern-badge ${clause.concern_level}`}>
-          {concernIcons[clause.concern_level] ?? ''} {clause.concern_level}
+          <ConcernIcon size={12} /> {clause.concern_level}
         </span>
       </div>
 
@@ -55,27 +60,27 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
 
       {clause.exact_quote && (
         <div className="quote-verification">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span className={`quote-status-badge ${quoteStatusClass}`}>{quoteStatusLabel}</span>
+          <div className="quote-verification-row">
+            <span className={`quote-status-badge ${quoteStatusClass}`}>
+              {QuoteStatusIcon && <QuoteStatusIcon size={13} />} {quoteStatusLabel}
+            </span>
             {clause.page_hint && (
-              <span style={{ fontSize: "var(--text-xs)", fontWeight: 600, color: "#94a3b8" }}>
-                Page {clause.page_hint}
-              </span>
+              <span className="quote-page-ref">Page {clause.page_hint}</span>
             )}
           </div>
-          <p className="quote-text">"{clause.exact_quote}"</p>
+          <p className="quote-text">&ldquo;{clause.exact_quote}&rdquo;</p>
           {onViewInDocument && (
             <button
-              className="btn btn-secondary"
-              style={{ marginTop: 'var(--space-2)', fontSize: 'var(--text-sm)' }}
+              className="btn-secondary"
+              style={{ marginTop: 'var(--space-3)' }}
               onClick={() => onViewInDocument(clause.page_hint ?? undefined, clause.exact_quote!)}
             >
-              View in document
+              <IconExternalLink size={13} /> View in document
             </button>
           )}
           {numberWarning && (
-            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-moderate)', marginTop: 'var(--space-2)', fontWeight: 600 }}>
-              {numberWarning}
+            <p className="quote-number-warning">
+              <IconInfo size={13} /> {numberWarning}
             </p>
           )}
         </div>
@@ -100,13 +105,13 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
           <span className={`range-badge ${rc.position}`}>{getRangePositionLabel(rc.position)}</span>
           <span>{rc.summary}</span>
           {rc.range_low != null && rc.range_high != null && (
-            <span style={{ color: '#334155' }}>({rc.range_low}–{rc.range_high})</span>
+            <span>({rc.range_low}–{rc.range_high})</span>
           )}
         </div>
       ))}
 
       {rangeComparisons.length > 0 && (
-        <p style={{ fontSize: 'var(--text-xs)', color: '#334155', marginTop: 'var(--space-2)' }}>
+        <p className="range-comparison-note">
           {rangeComparisons[0].non_authoritative_label}
         </p>
       )}
@@ -120,8 +125,8 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
             onClick={() => setStatuteOpen(!statuteOpen)}
             id={`statute-toggle-${clause.id}`}
           >
-            <span>⚖ Indian Law References ({clause.applicable_law.length})</span>
-            <span className="chevron">▼</span>
+            <span className="expandable-panel-trigger-label"><IconScale size={14} /> Indian Law References ({clause.applicable_law.length})</span>
+            <span className="chevron"><IconChevronDown size={14} /></span>
           </button>
           {statuteOpen && (
             <div className="expandable-panel-body" id={`statute-panel-${clause.id}`}>
@@ -140,8 +145,8 @@ export function ClauseRiskCard({ clause, documentText, onViewInDocument }: Claus
             onClick={() => setScenarioOpen(!scenarioOpen)}
             id={`scenario-toggle-${clause.id}`}
           >
-            <span>→ What happens if this clause is triggered? ({clause.consequence_scenarios.length})</span>
-            <span className="chevron">▼</span>
+            <span className="expandable-panel-trigger-label"><IconArrowRight size={14} /> What happens if this clause is triggered? ({clause.consequence_scenarios.length})</span>
+            <span className="chevron"><IconChevronDown size={14} /></span>
           </button>
           {scenarioOpen && (
             <div className="expandable-panel-body" id={`scenario-panel-${clause.id}`}>

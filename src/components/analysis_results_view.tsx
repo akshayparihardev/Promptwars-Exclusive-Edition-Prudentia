@@ -3,6 +3,7 @@ import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js'
 import { ClauseRiskCard } from './clause_risk_card.js';
 import { LawyerConsultationExportButton } from './lawyer_consultation_export_button.js';
 import type { QAEntry } from '../hooks/use_document_analysis.js';
+import { IconAlertTriangle, IconCheck, IconInfo, IconSearch } from './icons.js';
 
 interface AnalysisResultsViewProps {
   analysis: OfferLetterAnalysis;
@@ -43,7 +44,7 @@ export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHi
         <div className="results-meta">
           {fileName && <span className="results-filename">File: {fileName}</span>}
           <span className={`overall-concern ${analysis.overall_concern_level}`}>
-            {analysis.overall_concern_level === 'significant' ? '⚠ ' : analysis.overall_concern_level === 'moderate' ? '◈ ' : '✓ '}
+            {analysis.overall_concern_level === 'significant' ? <IconAlertTriangle size={13} /> : analysis.overall_concern_level === 'moderate' ? <IconInfo size={13} /> : <IconCheck size={13} />}
             {analysis.overall_concern_level} concern
           </span>
         </div>
@@ -96,7 +97,7 @@ export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHi
 
           {analysis.unanswered_questions.length > 0 && (
             <section id="unanswered-questions" aria-label="Unanswered questions">
-              <h2>⚠ Information Not Found in Document</h2>
+              <h2><IconAlertTriangle size={14} /> Information Not Found in Document</h2>
               <ul>
                 {analysis.unanswered_questions.map((q, i) => <li key={i}>{q}</li>)}
               </ul>
@@ -116,10 +117,10 @@ export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHi
                         role="status"
                         aria-label="Not enough information provided"
                       >
-                        🔍 Not enough information provided — this topic is not addressed in the uploaded document.
+                        <IconSearch size={14} /> Not enough information provided — this topic is not addressed in the uploaded document.
                       </p>
                     ) : item.qa_status === 'processing' ? (
-                      <p className="qa-item-answer" style={{ color: '#475569', fontStyle: 'italic' }}>Looking up...</p>
+                      <p className="qa-item-answer is-loading">Looking up…</p>
                     ) : (
                       <p className="qa-item-answer">{item.answer}</p>
                     )}

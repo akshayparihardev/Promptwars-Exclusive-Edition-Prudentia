@@ -5,6 +5,7 @@ import { DocumentUploadScreen } from './components/document_upload_screen.js';
 import { AnalysisResultsView } from './components/analysis_results_view.js';
 import { TwoPaneLayout } from './components/two_pane_layout.js';
 import { PdfViewer } from './components/pdf_viewer.js';
+import { IconScale, IconAlertTriangle, IconSearch, IconArrowRight, IconCheck, IconRefresh } from './components/icons.js';
 
 /**
  * Prudentia — AI-powered offer letter analyser for Indian engineering students.
@@ -33,13 +34,13 @@ export default function App(): React.ReactElement {
   // ── Error state ──────────────────────────────────────────────────────────────
   if (phase === 'error' && error) {
     return (
-      <div id="prudentia-error-state" role="alert" aria-live="assertive" className="error-screen">
-        <div className="error-card">
-          <div className="error-icon">⚠️</div>
+      <div id="prudentia-error-state" role="alert" aria-live="assertive" className="state-screen">
+        <div className="state-card is-error">
+          <div className="state-icon-error"><IconAlertTriangle size={32} /></div>
           <h1>Analysis Failed</h1>
-          <p className="error-message">{error.message}</p>
+          <p className="state-error-message">{error.message}</p>
           {error.validation_errors && error.validation_errors.length > 0 && (
-            <details className="error-details">
+            <details className="state-error-details">
               <summary>Technical details</summary>
               <ul>{error.validation_errors.map((e, i) => <li key={i}>{e}</li>)}</ul>
             </details>
@@ -50,7 +51,7 @@ export default function App(): React.ReactElement {
             type="button"
             onClick={reset}
           >
-            {error.is_retryable ? '🔄 Try again' : 'Start over'}
+            {error.is_retryable ? (<><IconRefresh size={15} /> Try again</>) : 'Start over'}
           </button>
         </div>
       </div>
@@ -60,24 +61,24 @@ export default function App(): React.ReactElement {
   // ── Analysis loading state ───────────────────────────────────────────────────
   if (isProcessing) {
     return (
-      <div className="loading-screen" role="status" aria-live="polite">
-        <div className="loading-card">
-          <div className="loading-logo">⚖ Prudentia</div>
-          <div className="loading-spinner-wrapper">
-            <div className="loading-spinner" />
+      <div className="state-screen" role="status" aria-live="polite">
+        <div className="state-card">
+          <div className="state-wordmark"><IconScale size={16} /> Prudentia</div>
+          <div className="state-spinner-wrap">
+            <div className="state-spinner" />
           </div>
-          <h2 className="loading-headline">Analysing your offer letter</h2>
-          <p className="loading-file">{fileName}</p>
-          <div className="loading-status-message" aria-live="polite">
-            {analysisStatus || '🔄 Starting analysis...'}
+          <h2 className="state-headline">Analysing your offer letter</h2>
+          <p className="state-file">{fileName}</p>
+          <div className="state-status-message" aria-live="polite">
+            {analysisStatus || 'Starting analysis…'}
           </div>
-          <div className="loading-steps">
-            <div className="loading-step">🏛 Injecting real Indian statute text (ICA 1872, SRA 1963)</div>
-            <div className="loading-step">🔍 Identifying and classifying clauses</div>
-            <div className="loading-step">📋 Modelling consequence scenarios per clause</div>
-            <div className="loading-step">✅ Verifying extracted quotes against source PDF</div>
+          <div className="state-steps">
+            <div className="state-step"><IconScale size={15} /> Injecting real Indian statute text (ICA 1872, SRA 1963)</div>
+            <div className="state-step"><IconSearch size={15} /> Identifying and classifying clauses</div>
+            <div className="state-step"><IconArrowRight size={15} /> Modelling consequence scenarios per clause</div>
+            <div className="state-step"><IconCheck size={15} /> Verifying extracted quotes against source PDF</div>
           </div>
-          <p className="loading-footnote">This typically takes 15–25 seconds. We're being thorough.</p>
+          <p className="state-footnote">This typically takes 15–25 seconds. We're being thorough.</p>
         </div>
       </div>
     );
@@ -115,5 +116,5 @@ export default function App(): React.ReactElement {
   }
 
   // ── Upload / idle state ───────────────────────────────────────────────────────
-  return <DocumentUploadScreen onFileSelected={analyzeDocument} isProcessing={isProcessing} />;
+  return <DocumentUploadScreen onFileSelected={analyzeDocument} />;
 }
