@@ -59,6 +59,7 @@
 
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
+html,body{overflow-x:hidden;max-width:100%}
 body{
   font-family:var(--font-body);
   background:var(--color-bg);
@@ -84,15 +85,15 @@ button{font-family:inherit}
 /* ── UPLOAD SCREEN ── */
 #prudentia-upload-screen{
   min-height:100vh;display:flex;flex-direction:column;align-items:center;
-  padding:var(--space-20) var(--space-6) var(--space-16);background:var(--color-bg);
+  padding:clamp(var(--space-10),8vw,var(--space-20)) var(--space-6) var(--space-16);background:var(--color-bg);
 }
 #prudentia-upload-screen header{text-align:center;margin-bottom:var(--space-10);max-width:640px;display:flex;flex-direction:column;align-items:center;gap:var(--space-4)}
-#prudentia-upload-screen header h1{font-size:var(--text-5xl);font-weight:600;letter-spacing:-0.01em;color:var(--color-ink)}
+#prudentia-upload-screen header h1{font-size:clamp(2rem,7vw,var(--text-5xl));font-weight:600;letter-spacing:-0.01em;color:var(--color-ink)}
 #prudentia-upload-screen header p{font-size:var(--text-lg);color:var(--color-ink-muted);line-height:1.65;max-width:520px}
 
 #upload-drop-zone{
   width:100%;max-width:560px;border:1.5px dashed var(--color-border-strong);border-radius:var(--radius-xl);
-  padding:var(--space-12) var(--space-8);text-align:center;cursor:pointer;background:var(--color-surface);
+  padding:clamp(var(--space-8),6vw,var(--space-12)) var(--space-6);text-align:center;cursor:pointer;background:var(--color-surface);
   transition:border-color var(--transition),box-shadow var(--transition),background var(--transition);
   margin-bottom:var(--space-3);box-shadow:var(--shadow-xs);
 }
@@ -113,7 +114,7 @@ button{font-family:inherit}
 
 #prudentia-upload-screen section[aria-labelledby="why-prudentia-heading"]{
   max-width:640px;width:100%;margin-top:var(--space-16);background:var(--color-surface);
-  border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-8);box-shadow:var(--shadow-xs);
+  border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:clamp(var(--space-5),5vw,var(--space-8));box-shadow:var(--shadow-xs);
 }
 #prudentia-upload-screen #why-prudentia-heading{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--color-ink);margin-bottom:var(--space-2);text-align:center}
 #prudentia-upload-screen section[aria-labelledby="why-prudentia-heading"] > p:first-of-type{font-size:var(--text-sm);color:var(--color-ink-faint);margin-bottom:var(--space-5);text-align:center}
@@ -128,7 +129,7 @@ button{font-family:inherit}
   padding:var(--space-6);background:var(--color-bg);
 }
 .state-card{
-  max-width:480px;width:100%;text-align:center;padding:var(--space-10) var(--space-8);
+  max-width:480px;width:100%;text-align:center;padding:clamp(var(--space-6),6vw,var(--space-10)) clamp(var(--space-5),5vw,var(--space-8));
   background:var(--color-surface);border-radius:var(--radius-xl);box-shadow:var(--shadow-md);
   border:1px solid var(--color-border);
 }
@@ -195,7 +196,7 @@ button{font-family:inherit}
 #clauses-section > h2{font-family:var(--font-body);font-size:var(--text-xs);font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--color-ink-faint);margin-bottom:var(--space-5)}
 
 /* ── CLAUSE CARD ── */
-.clause-risk-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-6);margin-bottom:var(--space-4);transition:box-shadow var(--transition),border-color var(--transition);position:relative;overflow:hidden;box-shadow:var(--shadow-xs)}
+.clause-risk-card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:clamp(var(--space-4),4vw,var(--space-6));margin-bottom:var(--space-4);transition:box-shadow var(--transition),border-color var(--transition);position:relative;overflow:hidden;box-shadow:var(--shadow-xs)}
 .clause-risk-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px}
 .clause-risk-card[data-concern="significant"]::before{background:var(--color-significant)}
 .clause-risk-card[data-concern="moderate"]::before{background:var(--color-moderate)}
@@ -327,10 +328,32 @@ button{font-family:inherit}
 /* ── DIVIDER ── */
 .divider{height:1px;background:var(--color-border);margin:var(--space-4) 0}
 
-/* ── RESPONSIVE ── */
-@media(max-width:640px){
-  #prudentia-upload-screen header h1{font-size:var(--text-4xl)}
+/* ── RESPONSIVE ──
+   Tiered so the layout degrades gracefully rather than jumping straight
+   from desktop to phone: tablet (≤1024px) tightens the results header
+   and offer-summary grid; mobile (≤768px) stacks button rows and forms;
+   small phones (≤480px) trim spacing further and shrink the wordmark. */
+@media(max-width:1024px){
+  #offer-summary,#analysis-disclaimer,#clauses-section,#qa-section,#unanswered-questions,#export-section{
+    width:calc(100% - var(--space-6));
+  }
+}
+
+@media(max-width:768px){
+  #prudentia-results-view header{padding:var(--space-5) var(--space-4)}
   .clause-card-header{flex-direction:column;align-items:flex-start}
   .qa-form{flex-direction:column}
   #export-section{flex-direction:column;align-items:flex-start}
+  .quote-verification-row{flex-direction:column;align-items:flex-start;gap:var(--space-1)}
+  .scenario-footer{flex-direction:column;align-items:flex-start}
+}
+
+@media(max-width:480px){
+  #prudentia-upload-screen{padding-left:var(--space-4);padding-right:var(--space-4)}
+  #prudentia-upload-screen section[aria-labelledby="why-prudentia-heading"]{margin-top:var(--space-10)}
+  .state-wordmark{font-size:var(--text-base)}
+  .state-steps{gap:var(--space-1)}
+  .offer-summary-grid{grid-template-columns:1fr 1fr;gap:var(--space-4)}
+  .key-numbers{gap:var(--space-2)}
+  #prudentia-results-view header h1{font-size:var(--text-xl)}
 }

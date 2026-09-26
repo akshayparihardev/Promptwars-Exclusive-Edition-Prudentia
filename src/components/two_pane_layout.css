@@ -21,3 +21,29 @@
 .right-pane {
   background-color: var(--color-surface-2);
 }
+
+/* Below ~900px there isn't room for two side-by-side panes without
+   crushing both to uselessness - stack them instead: results first
+   (the primary reading task), document viewer below at a fixed
+   generous height so it's still genuinely usable, not a sliver. */
+@media (max-width: 900px) {
+  .two-pane-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+  .pane {
+    flex: none;
+    width: 100%;
+  }
+  .left-pane {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+    overflow-y: visible;
+  }
+  .right-pane {
+    height: 80vh;
+  }
+}
+
