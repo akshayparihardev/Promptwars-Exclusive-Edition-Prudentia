@@ -203,6 +203,33 @@ function answerFromAnalysis(
     }
   }
 
+  // Generic fallback: scan every extracted clause (including 'general' —
+  // clauses outside the 5 named categories, e.g. ESOP/stock-option clauses)
+  // for keyword overlap before giving up. Without this, a clause that was
+  // genuinely found and extracted could still be wrongly reported as
+  // "not enough information" just because it doesn't match one of the
+  // fixed categories above.
+  const STOPWORDS = new Set([
+    'what', 'when', 'does', 'will', 'this', 'that', 'with', 'have', 'from',
+    'about', 'there', 'which', 'happen', 'happens', 'document', 'letter',
+    'offer', 'clause', 'section', 'stated', 'says', 'said',
+  ]);
+  const questionWords = q
+    .split(/[^a-z0-9]+/)
+    .filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+
+  if (questionWords.length > 0) {
+    for (const clause of analysis.clauses) {
+      const haystack = `${clause.title} ${clause.plain_english} ${clause.exact_quote}`.toLowerCase();
+      if (questionWords.some((w) => haystack.includes(w))) {
+        const answer =
+          `${clause.plain_english}\n\nDirect quote from document: "${clause.exact_quote}"\n\nConcern: ${clause.concern_rationale}`;
+        const verification = verifyQuoteInDocument(clause.exact_quote, documentText);
+        return { answer, status: 'answered', verification };
+      }
+    }
+  }
+
   // Not found anywhere in the analysis
   return {
     answer: null,
