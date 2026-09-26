@@ -7,7 +7,8 @@
  *   1. Receives a PDF file as base64 from the client
  *   2. Determines which clause types are present (pre-analysis step)
  *   3. Injects relevant statute context from indian_statute_reference.ts deterministically
- *   4. Calls Gemini 2.5 Flash with native PDF vision (no OCR, no text extraction)
+ *   4. Calls Gemini with native PDF vision (no OCR, no text extraction), trying
+ *      each model in GEMINI_MODELS in order until one succeeds
  *   5. Validates the response against the full OfferLetterAnalysis schema (server-side)
  *   6. Returns the validated, typed analysis — or a structured error
  *
@@ -15,9 +16,11 @@
  *   It is held only in the function's memory for the duration of the single invocation.
  *   Vercel function memory is ephemeral — zeroed between cold starts.
  *
- * Retry policy: if Gemini produces schema-invalid output, one automatic retry is made
- *   with an explicit repair prompt. If the retry also fails validation, the error is
- *   returned to the client for user-facing display.
+ * Retry policy:
+ *   - Schema-invalid output: one automatic retry with an explicit repair prompt.
+ *   - Rate-limit/quota errors: falls back through GEMINI_MODELS (each has its own
+ *     daily free-tier quota), then one final backoff-and-retry on the last model.
+ *   If all of that still fails, the error is returned to the client for display.
  *
  * "Assist not replace" enforcement:
  *   - The system prompt explicitly prohibits legal conclusions stated as fact.
@@ -37,7 +40,12 @@ import { buildStatuteContextForPrompt, type ClauseType } from '../src/logic/clau
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+// Tried in order. Google's free-tier quota is keyed per-project-PER-MODEL
+// (confirmed from a live 429: quotaId "GenerateRequestsPerDayPerProjectPerModel-
+// FreeTier"), so a different model name has its own separate daily allowance -
+// falling back to the next model on quota exhaustion is a real mitigation, not
+// just a retry against the same wall. All of these support native PDF vision.
+const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash'];
 const MAX_RETRIES = 1;
 
 // ─── Prompt builder ───────────────────────────────────────────────────────────
@@ -156,8 +164,9 @@ Now analyse the attached PDF document and produce the JSON.`;
 
 // ─── Gemini caller ────────────────────────────────────────────────────────────
 
-async function callGemini(
+async function callGeminiOnModel(
   genai: GoogleGenerativeAI,
+  modelName: string,
   pdfBase64: string,
   mimeType: string,
   isRetry: boolean
@@ -169,7 +178,7 @@ async function callGemini(
   // relying only on prompt instructions ("output ONLY this JSON object")
   // worked most of the time but not always.
   const model = genai.getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: modelName,
     generationConfig: { responseMimeType: 'application/json' },
   });
 
@@ -213,6 +222,38 @@ function isRateLimitError(err: unknown): boolean {
   return status === 429 || /RESOURCE_EXHAUSTED|rate.?limit|quota/i.test(msg);
 }
 
+/**
+ * Tries each model in GEMINI_MODELS in order. A rate-limit/quota error on
+ * one model moves immediately to the next (different quota bucket, no
+ * backoff needed). Any other kind of error (JSON parse failure, genuine
+ * network issue) is not model-specific, so it's rethrown immediately
+ * without burning the remaining models' quota on a non-quota problem -
+ * the caller's existing JSON-repair / schema-repair retry logic handles
+ * those. If every model in the chain is rate-limited, one last bounded
+ * backoff-and-retry is attempted on the final model before giving up.
+ */
+async function callGeminiWithFallback(
+  genai: GoogleGenerativeAI,
+  pdfBase64: string,
+  mimeType: string,
+  isRetry: boolean
+): Promise<unknown> {
+  for (const modelName of GEMINI_MODELS) {
+    try {
+      return await callGeminiOnModel(genai, modelName, pdfBase64, mimeType, isRetry);
+    } catch (err) {
+      if (!isRateLimitError(err)) throw err;
+      // rate-limited on this model - fall through to try the next one
+    }
+  }
+
+  // Every model was rate-limited. One last-ditch bounded retry on the final
+  // model after a short wait, in case it was a very short-lived per-minute
+  // burst rather than a daily quota wall.
+  await sleep(5000);
+  return callGeminiOnModel(genai, GEMINI_MODELS[GEMINI_MODELS.length - 1], pdfBase64, mimeType, isRetry);
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -253,7 +294,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   let rawOutput: unknown;
 
   try {
-    rawOutput = await callGemini(genai, pdf_base64, resolvedMimeType, false);
+    rawOutput = await callGeminiWithFallback(genai, pdf_base64, resolvedMimeType, false);
   } catch (parseOrNetworkError) {
     const msg =
       parseOrNetworkError instanceof Error
@@ -265,7 +306,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
       // an explicit repair prompt (this is a formatting issue, not a
       // transient/rate-limit issue, so no backoff needed).
       try {
-        rawOutput = await callGemini(genai, pdf_base64, resolvedMimeType, true);
+        rawOutput = await callGeminiWithFallback(genai, pdf_base64, resolvedMimeType, true);
       } catch (retryError) {
         res.status(502).json({
           error: 'Gemini returned unparseable output on both attempts.',
@@ -274,22 +315,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         return;
       }
     } else if (isRateLimitError(parseOrNetworkError)) {
-      // Rate limit / quota exhaustion - a fresh call an instant later is
-      // very likely to hit the exact same wall, so wait briefly before the
-      // one retry we can afford within the function's time budget.
-      await sleep(5000);
-      try {
-        rawOutput = await callGemini(genai, pdf_base64, resolvedMimeType, false);
-      } catch (retryError) {
-        const stillRateLimited = isRateLimitError(retryError);
-        res.status(429).json({
-          error: stillRateLimited
-            ? "Gemini's API rate limit was reached (too many requests in a short time). Please wait about a minute and try again."
-            : 'Failed to call Gemini API.',
-          detail: retryError instanceof Error ? retryError.message : String(retryError),
-        });
-        return;
-      }
+      // Every model in GEMINI_MODELS (plus the final backoff retry inside
+      // callGeminiWithFallback) was rate-limited - a genuine full exhaustion,
+      // not something a quick retry can fix.
+      res.status(429).json({
+        error: "Gemini's API rate limit was reached across all available models. Please wait about a minute and try again.",
+        detail: msg,
+      });
+      return;
     } else {
       res.status(502).json({
         error: 'Failed to call Gemini API.',
@@ -306,7 +339,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
     // Attempt repair if the output is partially valid (has clauses array)
     if (isPartiallyValid(rawOutput) && MAX_RETRIES > 0) {
       try {
-        const retryOutput = await callGemini(genai, pdf_base64, resolvedMimeType, true);
+        const retryOutput = await callGeminiWithFallback(genai, pdf_base64, resolvedMimeType, true);
         validationResult = validateAnalysisOutput(retryOutput);
         if (validationResult.valid) {
           rawOutput = retryOutput;
