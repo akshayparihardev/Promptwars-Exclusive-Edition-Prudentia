@@ -2,7 +2,7 @@
   "functions": {
     "api/analyze_offer_letter.ts": {
       "maxDuration": 60,
-      "memory": 512
+      "includeFiles": "src/**"
     }
   },
   "rewrites": [
