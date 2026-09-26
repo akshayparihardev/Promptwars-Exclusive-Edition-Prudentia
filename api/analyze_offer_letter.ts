@@ -187,6 +187,23 @@ async function callGemini(
   return JSON.parse(cleaned);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Detects Google Generative AI rate-limit / quota-exhaustion errors.
+ * The SDK surfaces these as HTTP 429 with a message containing
+ * "RESOURCE_EXHAUSTED" or "quota" - distinct from a genuine network
+ * failure or an invalid/misconfigured key, which need different
+ * messaging so the user knows whether to retry immediately or wait.
+ */
+function isRateLimitError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  const status = (err as { status?: number })?.status;
+  return status === 429 || /RESOURCE_EXHAUSTED|rate.?limit|quota/i.test(msg);
+}
+
 // ─── Main handler ─────────────────────────────────────────────────────────────
 
 export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
@@ -234,13 +251,32 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
         ? parseOrNetworkError.message
         : String(parseOrNetworkError);
 
-    // If it's a JSON parse failure and the response looks partially valid, retry
     if (msg.includes('JSON')) {
+      // JSON parse failure - Gemini's own output was malformed. Retry with
+      // an explicit repair prompt (this is a formatting issue, not a
+      // transient/rate-limit issue, so no backoff needed).
       try {
         rawOutput = await callGemini(genai, pdf_base64, resolvedMimeType, true);
       } catch (retryError) {
         res.status(502).json({
           error: 'Gemini returned unparseable output on both attempts.',
+          detail: retryError instanceof Error ? retryError.message : String(retryError),
+        });
+        return;
+      }
+    } else if (isRateLimitError(parseOrNetworkError)) {
+      // Rate limit / quota exhaustion - a fresh call an instant later is
+      // very likely to hit the exact same wall, so wait briefly before the
+      // one retry we can afford within the function's time budget.
+      await sleep(5000);
+      try {
+        rawOutput = await callGemini(genai, pdf_base64, resolvedMimeType, false);
+      } catch (retryError) {
+        const stillRateLimited = isRateLimitError(retryError);
+        res.status(429).json({
+          error: stillRateLimited
+            ? "Gemini's API rate limit was reached (too many requests in a short time). Please wait about a minute and try again."
+            : 'Failed to call Gemini API.',
           detail: retryError instanceof Error ? retryError.message : String(retryError),
         });
         return;

@@ -324,7 +324,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
       setError({
         message: errorData.error ?? `Server error (${rawResponse.status})`,
         validation_errors: errorData.validation_errors,
-        is_retryable: rawResponse.status >= 500,
+        is_retryable: rawResponse.status >= 500 || rawResponse.status === 429,
       });
       return;
     }
