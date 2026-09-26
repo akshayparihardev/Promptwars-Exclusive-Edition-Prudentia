@@ -194,9 +194,12 @@ const offerLetterAnalysisSchema = {
     },
 
     consultation_questions: {
+      // No minItems: a non-offer-letter document, or a genuinely clean
+      // offer letter with no significant concerns, has nothing to raise
+      // with a lawyer - an empty array is a legitimate, correct answer,
+      // not a sign the model failed to follow instructions.
       type: 'array',
       items: { type: 'string' },
-      minItems: 1,
     },
 
     overall_concern_level: {

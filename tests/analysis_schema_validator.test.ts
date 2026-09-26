@@ -160,13 +160,13 @@ describe('validateAnalysisOutput', () => {
     expect(result.valid).toBe(false);
   });
 
-  it('rejects when consultation_questions is empty (minItems: 1)', () => {
-    const invalid = {
+  it('accepts an empty consultation_questions array (e.g. non-offer-letter or no-concern documents)', () => {
+    const valid = {
       ...validAnalysis,
       consultation_questions: [],
     };
-    const result = validateAnalysisOutput(invalid);
-    expect(result.valid).toBe(false);
+    const result = validateAnalysisOutput(valid);
+    expect(result.valid).toBe(true);
   });
 
   it('accepts null values for nullable offer_summary fields', () => {
