@@ -68,7 +68,7 @@ export function DocumentUploadScreen({ onFileSelected, isProcessing }: DocumentU
           >
             <input ref={fileInputRef} id="pdf-file-input" type="file" accept=".pdf,application/pdf"
               aria-label="Select PDF offer letter" style={{ display: 'none' }} onChange={handleFileChange} />
-            <span className="upload-icon">📄</span>
+            <span className="upload-icon" aria-hidden="true">📄</span>
             <p>Drop your PDF here, or click to browse</p>
             <p>PDF only · Max 10 MB · Not stored</p>
           </div>

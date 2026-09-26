@@ -107,7 +107,8 @@ function fileToBase64(file: File): Promise<string> {
  */
 function answerFromAnalysis(
   question: string,
-  analysis: OfferLetterAnalysis
+  analysis: OfferLetterAnalysis,
+  documentText: string
 ): { answer: string | null; status: QAEntry['qa_status']; verification: QuoteVerificationResult | null } {
   const q = question.toLowerCase();
 
@@ -163,7 +164,7 @@ function answerFromAnalysis(
     if (clause) {
       const answer =
         `${clause.plain_english}\n\nDirect quote from document: "${clause.exact_quote}"\n\nConcern: ${clause.concern_rationale}`;
-      const verification = verifyQuoteInDocument(clause.exact_quote, clause.exact_quote);
+      const verification = verifyQuoteInDocument(clause.exact_quote, documentText);
       return { answer, status: 'answered', verification };
     }
     // Keyword matched a clause type but that clause was not found in this document
@@ -320,7 +321,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
       setQaHistory((prev) => [...prev, entry]);
 
       // Answer synchronously from the existing analysis (no extra AI call)
-      const { answer, status, verification } = answerFromAnalysis(question, analysis);
+      const { answer, status, verification } = answerFromAnalysis(question, analysis, extractedPdfText);
 
       setQaHistory((prev) =>
         prev.map((e) =>
@@ -330,7 +331,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
         )
       );
     },
-    [analysis, phase]
+    [analysis, phase, extractedPdfText]
   );
 
   const reset = useCallback(() => {
