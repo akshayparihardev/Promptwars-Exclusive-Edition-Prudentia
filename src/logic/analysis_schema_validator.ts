@@ -284,6 +284,67 @@ export function validateOrThrow(raw: unknown): OfferLetterAnalysis {
   return result.data;
 }
 
+// ─── Output normalisation ─────────────────────────────────────────────────────
+
+const CLAUSE_TYPES: ReadonlySet<string> = new Set<string>(
+  offerLetterAnalysisSchema.properties.clauses.items.properties.clause_type.enum
+);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/** A finite number, or a purely numeric string such as "90" or "1,00,000"; otherwise null. */
+function toNullableNumber(value: unknown): number | null {
+  if (typeof value === 'number') return Number.isFinite(value) ? value : null;
+  if (typeof value === 'string' && /^\s*\d[\d,]*(?:\.\d+)?\s*$/.test(value)) {
+    return Number(value.replace(/[,\s]/g, ''));
+  }
+  return null;
+}
+
+function normaliseClause(clause: unknown): unknown {
+  if (!isRecord(clause)) return clause;
+  const keyNumbers = isRecord(clause['key_numbers']) ? clause['key_numbers'] : {};
+  const scenarios = clause['consequence_scenarios'];
+  return {
+    ...clause,
+    clause_type: CLAUSE_TYPES.has(clause['clause_type'] as string) ? clause['clause_type'] : 'general',
+    page_hint: toNullableNumber(clause['page_hint']),
+    key_numbers: {
+      duration_months: toNullableNumber(keyNumbers['duration_months']),
+      amount_inr: toNullableNumber(keyNumbers['amount_inr']),
+      notice_days: toNullableNumber(keyNumbers['notice_days']),
+    },
+    applicable_law: clause['applicable_law'] ?? [],
+    consequence_scenarios: Array.isArray(scenarios)
+      ? scenarios.map((s) => (isRecord(s) ? { ...s, financial_estimate: s['financial_estimate'] ?? null } : s))
+      : scenarios ?? [],
+  };
+}
+
+/**
+ * Repairs benign shape slips before strict validation, so a faster model's
+ * `"key_numbers": null` doesn't cost the user a whole second Gemini call.
+ *
+ * It only fills values that carry no information (a null/missing number
+ * object, a missing list, an unknown clause category → the "general"
+ * catch-all) and parses numeric strings like "1,00,000". It never invents
+ * content: a missing disclaimer, quote or concern level still fails
+ * validation, and every key number is still cross-checked against the
+ * verbatim quote by the client-side verifier.
+ */
+export function normaliseAnalysisOutput(raw: unknown): unknown {
+  if (!isRecord(raw)) return raw;
+  const clauses = raw['clauses'];
+  return {
+    ...raw,
+    clauses: Array.isArray(clauses) ? clauses.map(normaliseClause) : clauses,
+    unanswered_questions: raw['unanswered_questions'] ?? [],
+    consultation_questions: raw['consultation_questions'] ?? [],
+  };
+}
+
 /**
  * Checks whether a raw object has the minimum fields needed to attempt repair
  * (e.g., has `clauses` array but some items are malformed).

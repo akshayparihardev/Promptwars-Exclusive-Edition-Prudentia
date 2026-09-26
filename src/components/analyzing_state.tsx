@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { IconScale, IconSearch, IconInfo, IconArrowRight, IconCheck, IconFileText } from './icons.js';
+import { DEFAULT_LANGUAGE, resolveExplanationLanguage } from '../logic/explanation_language.js';
 
 /**
  * Client-side perceived-progress steps for the analysis wait.
@@ -18,22 +19,29 @@ const STEPS = [
 ] as const;
 
 const STEP_INTERVAL_MS = 3200;
+/** After this many ticks (~32s) the wait is longer than usual, so say so. */
+const SLOW_AFTER_TICKS = 10;
 
 interface AnalyzingStateProps {
   fileName: string | null;
+  /** Explanation language the analysis was requested in. */
+  languageCode: string;
 }
 
-export function AnalyzingState({ fileName }: AnalyzingStateProps): React.ReactElement {
-  const [stepIndex, setStepIndex] = useState(0);
+export function AnalyzingState({ fileName, languageCode }: AnalyzingStateProps): React.ReactElement {
+  const [ticks, setTicks] = useState(0);
 
   useEffect(() => {
+    // Returning the same value once capped lets React skip the re-render.
     const interval = setInterval(() => {
-      setStepIndex((i) => (i < STEPS.length - 1 ? i + 1 : i));
+      setTicks((t) => (t < SLOW_AFTER_TICKS ? t + 1 : t));
     }, STEP_INTERVAL_MS);
     return () => clearInterval(interval);
   }, []);
 
+  const stepIndex = Math.min(ticks, STEPS.length - 1);
   const current = STEPS[stepIndex];
+  const language = resolveExplanationLanguage(languageCode);
 
   return (
     <div className="state-screen" role="status" aria-live="polite">
@@ -59,7 +67,13 @@ export function AnalyzingState({ fileName }: AnalyzingStateProps): React.ReactEl
             );
           })}
         </div>
-        <p className="state-footnote">This typically takes 15–25 seconds. We're being thorough.</p>
+        <p className="state-footnote">
+          {ticks >= SLOW_AFTER_TICKS
+            ? 'Still working — longer offer letters take a little more time. Please keep this tab open.'
+            : language.code === DEFAULT_LANGUAGE.code
+              ? "This typically takes 15–25 seconds. We're being thorough."
+              : <>Writing explanations in <span lang={language.code}>{language.nativeLabel}</span> — this can take a little longer.</>}
+        </p>
       </div>
     </div>
   );

@@ -26,6 +26,7 @@ export default function App(): React.ReactElement {
     originalFile,
     qaHistory,
     extractedPdfText,
+    analysisLanguage,
     analyzeDocument,
     askQuestion,
     reset,
@@ -72,7 +73,7 @@ export default function App(): React.ReactElement {
 
   // ── Analysis loading state ───────────────────────────────────────────────────
   if (isProcessing) {
-    return <AnalyzingState key={fileName} fileName={fileName} />;
+    return <AnalyzingState key={fileName} fileName={fileName} languageCode={analysisLanguage} />;
   }
 
   // ── Complete state — Two-pane layout ─────────────────────────────────────────
@@ -84,6 +85,7 @@ export default function App(): React.ReactElement {
             analysis={analysis}
             fileName={fileName}
             extractedPdfText={extractedPdfText}
+            languageCode={analysisLanguage}
             qaHistory={qaHistory}
             onAskQuestion={askQuestion}
             onReset={reset}

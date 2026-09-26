@@ -3,6 +3,7 @@ import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js'
 import { ClauseRiskCard } from './clause_risk_card.js';
 import { LawyerConsultationExportButton } from './lawyer_consultation_export_button.js';
 import type { QAEntry } from '../hooks/use_document_analysis.js';
+import { DEFAULT_LANGUAGE, resolveExplanationLanguage } from '../logic/explanation_language.js';
 import { IconAlertTriangle, IconCheck, IconInfo, IconSearch } from './icons.js';
 
 interface AnalysisResultsViewProps {
@@ -10,14 +11,17 @@ interface AnalysisResultsViewProps {
   fileName: string | null;
   /** Independently extracted PDF text for quote verification (PDF.js) */
   extractedPdfText: string;
+  /** Language code the explanations were requested in. */
+  languageCode: string;
   qaHistory: QAEntry[];
   onAskQuestion: (q: string) => void;
   onReset: () => void;
   onViewInDocument?: (page: number | undefined, quote: string) => void;
 }
 
-export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHistory, onAskQuestion, onReset, onViewInDocument }: AnalysisResultsViewProps): React.ReactElement {
+export function AnalysisResultsView({ analysis, fileName, extractedPdfText, languageCode, qaHistory, onAskQuestion, onReset, onViewInDocument }: AnalysisResultsViewProps): React.ReactElement {
   const [qaInput, setQaInput] = useState('');
+  const language = resolveExplanationLanguage(languageCode);
 
   const handleQaSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,6 +58,16 @@ export function AnalysisResultsView({ analysis, fileName, extractedPdfText, qaHi
       </header>
 
       <p id="analysis-disclaimer"><strong>Reminder:</strong> {analysis.disclaimer}</p>
+
+      {language.code !== DEFAULT_LANGUAGE.code && (
+        <p id="language-note">
+          <IconInfo size={14} />
+          <span>
+            Explanations are in <strong lang={language.code}>{language.nativeLabel}</strong> ({language.label}).
+            Quotes from your document, statute text and offer details are kept exactly as written, so each one can be checked word-for-word against the original.
+          </span>
+        </p>
+      )}
 
       {!analysis.is_offer_letter ? (
         <div id="not-offer-letter-notice">

@@ -5,7 +5,7 @@
 [![Model](https://img.shields.io/badge/Model-Gemini_2.5_Flash-8A2BE2?style=flat-square&logo=googlegemini&logoColor=white)](https://ai.google.dev/)
 [![Stack](https://img.shields.io/badge/Stack-React_19_%7C_Vite_%7C_TypeScript-61DAFB?style=flat-square&logo=react&logoColor=white)](https://react.dev/)
 [![Deployment](https://img.shields.io/badge/Deployed_on-Vercel-black?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com/)
-[![Tests](https://img.shields.io/badge/Tests-172_passing-brightgreen?style=flat-square&logo=vitest&logoColor=white)](#-test-coverage)
+[![Tests](https://img.shields.io/badge/Tests-181_passing-brightgreen?style=flat-square&logo=vitest&logoColor=white)](#-test-coverage)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](#)
 
 Built for **PromptWars: Virtual (Exclusive Edition) — Hack2Skill**  
@@ -174,8 +174,8 @@ User uploads PDF
 │  4. Verbatim statute text injected into system prompt    │
 │     → Gemini cannot hallucinate grounded citations       │
 │  5. Gemini called with PDF (native vision), falling back │
-│     across models on rate-limit/quota errors             │
-│  6. Full JSON validated against strict schema (Ajv)      │
+│     across models on quota/overload errors               │
+│  6. Slips normalised, then strict Ajv validation          │
 │     → Auto-retry with repair prompt on failure           │
 │  7. Validated analysis returned as a single JSON        │
 │     response                                             │
@@ -280,7 +280,7 @@ Prudentia evaluates contracts against a curated, hardcoded dictionary of 8 India
 | **Frontend** | React 19 + Vite | Fast, component-based, modern |
 | **Type System** | TypeScript (strict) | Schema contracts enforced at compile time |
 | **Backend** | Vercel Serverless Functions | Zero infrastructure, auto-scaling, cold-start < 1s |
-| **AI Model** | Gemini 2.5 Flash (+ fallback chain) | Native PDF vision — no OCR preprocessing needed |
+| **AI Model** | Gemini 2.5 Flash-Lite first (+ fallback chain) | Native PDF vision — no OCR preprocessing; Flash-Lite spends little or no time on hidden thinking, so results arrive faster |
 | **PDF Rendering** | pdfjs-dist (CDN worker) | Client-side PDF rendering + text extraction |
 | **Schema Validation** | Ajv (JSON Schema) | Gemini output validated before it reaches the UI |
 | **Testing** | Vitest | Fast, ESM-native, co-located tests |
@@ -311,7 +311,7 @@ api/
 
 ## 🧪 Test Coverage
 
-**172 tests across 14 files — all deterministic logic, no mocking of AI responses.**
+**181 tests across 15 files — all deterministic logic, no mocking of AI responses.**
 
 | Test File | Tests | What It Validates |
 |---|---|---|
@@ -328,10 +328,11 @@ api/
 | `clause_reference_formatter.test.ts` | 9 | "Clause 8.2 · Page 14" labels, heading text stripped, unnumbered clauses |
 | `explanation_language.test.ts` | 7 | Language allow-list, untrusted-input fallback, verbatim-quote prompt rule |
 | `clause_reference_schema.test.ts` | 3 | Optional `clause_reference` field accepted/rejected correctly |
-| `document_quote_verifier_matching.test.ts` | 3 | Fuzzy matching and document-cache correctness |
+| `document_quote_verifier_matching.test.ts` | 6 | Fuzzy matching, document-cache correctness, Indian digit grouping (Rs. 1,00,000) |
+| `analysis_output_normalisation.test.ts` | 6 | Benign model slips repaired (null `key_numbers`, numeric strings) without inventing content |
 
 ```bash
-npm test              # Run all 172 tests
+npm test              # Run all 181 tests
 npm run test:coverage # With coverage report
 ```
 
@@ -408,8 +409,8 @@ The Gemini API call takes 15–25 seconds. The UI tracks distinct phases (`uploa
 **Event:** PromptWars: Virtual (Exclusive Edition) — Hack2Skill  
 **Problem Statement:** AI for Legal Assistance & Access  
 **Repository Size:** < 500 KB (limit: 10 MB)  
-**Model:** Gemini 2.5 Flash, with automatic fallback to 2.5 Flash-Lite / 2.0 Flash  
-**Tests:** 172 passing, 0 failing  
+**Model:** Gemini 2.5 Flash-Lite, with automatic fallback to 3.1 Flash-Lite / 2.5 Flash / 3.8 Flash / 3.7 Flash  
+**Tests:** 181 passing, 0 failing  
 
 ---
 

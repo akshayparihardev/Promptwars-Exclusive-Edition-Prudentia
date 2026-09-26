@@ -113,7 +113,9 @@ export function verifyNumbers(
 ): string | null {
   if (!exactQuote || !keyNumbers) return null;
 
-  const numsInQuote = Array.from(exactQuote.matchAll(/\d+/g)).map((m) => m[0]);
+  // Commas are digit-group separators (Indian "1,00,000" or Western "100,000"),
+  // so read "1,00,000" as the single number 100000 rather than 1 / 00 / 000.
+  const numsInQuote = Array.from(exactQuote.matchAll(/\d+(?:,\d+)*/g)).map((m) => m[0].replace(/,/g, ''));
   if (numsInQuote.length === 0) return null;
 
   const warnings: string[] = [];

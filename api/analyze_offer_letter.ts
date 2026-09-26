@@ -16,10 +16,13 @@
  *   Vercel function memory is ephemeral — zeroed between cold starts.
  *
  * Retry policy:
- *   - Schema-invalid output: one automatic retry with an explicit repair prompt.
- *   - Rate-limit/quota errors: falls back through GEMINI_MODELS (each has its own
- *     daily free-tier quota), then one final backoff-and-retry on the last model.
- *     Rate-limited models are skipped for a cooldown window on warm instances.
+ *   - Benign shape slips (e.g. "key_numbers": null) are normalised without a
+ *     second call; anything still schema-invalid gets one automatic retry
+ *     with an explicit repair prompt.
+ *   - Model-level errors (quota, overload, unavailable): falls back through
+ *     GEMINI_MODELS (each has its own daily free-tier quota); if all were
+ *     rate-limited, one final backoff-and-retry on the last model. Failing
+ *     models are skipped for a cooldown window on warm instances.
  *   If all of that still fails, the error is returned to the client for display.
  *
  * "Assist not replace" enforcement:
@@ -32,6 +35,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenerativeAI, type Part } from '@google/generative-ai';
 import {
   validateAnalysisOutput,
+  normaliseAnalysisOutput,
   isPartiallyValid,
   type OfferLetterAnalysis,
 } from '../src/logic/analysis_schema_validator.js';
@@ -54,9 +58,19 @@ import { buildLanguageInstruction, resolveExplanationLanguage } from '../src/log
 // breaking the fallback chain past whichever model preceded it. Re-verify
 // against that endpoint before changing this list again, rather than
 // guessing a model name.
-const GEMINI_MODELS = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-3.8-flash', 'gemini-3.7-flash'];
+//
+// Ordered for latency: the Flash-Lite models spend little or no time on
+// hidden thinking tokens, so they answer faster than the full flash models,
+// which stay in the chain as fallbacks.
+const GEMINI_MODELS = [
+  'gemini-2.5-flash-lite',
+  'gemini-3.1-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-3.8-flash',
+  'gemini-3.7-flash',
+];
 const MAX_RETRIES = 1;
-const RATE_LIMIT_COOLDOWN_MS = 60000;
+const MODEL_COOLDOWN_MS = 60000;
 const FINAL_RETRY_DELAY_MS = 5000;
 
 // ─── Prompt (built once per cold start, not per request) ──────────────────────
@@ -101,6 +115,12 @@ ROLE AND CONSTRAINTS:
 - page_hint MUST be the 1-indexed page the exact_quote appears on.
 - consultation_questions MUST be specific to findings in THIS document — never generic boilerplate.
 - If the document is silent on something an employee would reasonably need to know (e.g. stock options, gratuity, leave policy), list it in unanswered_questions rather than guessing.
+
+LENGTH LIMITS (keep the analysis concise — it is read on a phone and must generate quickly):
+- At most 8 clauses; if there are more, keep the most consequential ones.
+- plain_english: at most 2 short sentences. concern_rationale: at most 3 sentences.
+- consequence_scenarios: at most 2 per clause, each with at most 3 short consequence_steps.
+- unanswered_questions: at most 5. consultation_questions: at most 6.
 
 STATUTE REFERENCE LIBRARY (use these when assigning applicable_law — do not cite statutes not in this list):
 ${STATUTE_BLOCK}
@@ -240,18 +260,31 @@ function isRateLimitError(err: unknown): boolean {
   return status === 429 || /RESOURCE_EXHAUSTED|rate.?limit|quota/i.test(msg);
 }
 
-// Models that recently returned a rate-limit error are skipped until their
+/**
+ * Errors that are about one specific model rather than the request: quota
+ * exhaustion (429), the model being overloaded or failing internally (503/500),
+ * or not being available to this key (404). Another model may well succeed.
+ * JSON parse failures and network errors are deliberately excluded — they are
+ * not model-specific and are handled by the caller's repair/error paths.
+ */
+function isModelLevelError(err: unknown): boolean {
+  if (isRateLimitError(err)) return true;
+  const msg = err instanceof Error ? err.message : String(err);
+  const status = (err as { status?: number })?.status;
+  return status === 404 || status === 500 || status === 503 || /\[(?:404|500|503)\b|overloaded|not found for API/i.test(msg);
+}
+
+// Models that recently failed at the model level are skipped until their
 // cooldown expires, so a warm instance doesn't spend a round-trip on a model
-// it already knows is exhausted.
+// it already knows is exhausted or unavailable.
 const modelCooldownUntil = new Map<string, number>();
 
 /**
- * Tries each available model in GEMINI_MODELS in order. A rate-limit/quota
- * error on one model puts it on cooldown and moves immediately to the next
- * (different quota bucket, no backoff needed). Any other kind of error (JSON
- * parse failure, genuine network issue) is not model-specific, so it's rethrown
- * immediately without burning the remaining models' quota - the caller's
- * JSON-repair / schema-repair retry logic handles those. If every candidate is
+ * Tries each available model in GEMINI_MODELS in order. A model-level failure
+ * (quota, overload, unavailable) puts that model on cooldown and moves
+ * immediately to the next — a different model has its own quota bucket and
+ * capacity, so no backoff is needed. Any other error is rethrown immediately
+ * without burning the remaining models' quota. If every candidate was
  * rate-limited, one last bounded backoff-and-retry is attempted before giving up.
  */
 async function callGeminiWithFallback(
@@ -263,6 +296,7 @@ async function callGeminiWithFallback(
   const now = Date.now();
   const ready = GEMINI_MODELS.filter((model) => (modelCooldownUntil.get(model) ?? 0) <= now);
   const candidates = ready.length > 0 ? ready : GEMINI_MODELS;
+  let lastError: unknown;
 
   for (const modelName of candidates) {
     try {
@@ -270,13 +304,14 @@ async function callGeminiWithFallback(
       modelCooldownUntil.delete(modelName);
       return output;
     } catch (err) {
-      if (!isRateLimitError(err)) throw err;
-      modelCooldownUntil.set(modelName, Date.now() + RATE_LIMIT_COOLDOWN_MS);
+      if (!isModelLevelError(err)) throw err;
+      lastError = err;
+      modelCooldownUntil.set(modelName, Date.now() + MODEL_COOLDOWN_MS);
     }
   }
 
-  // Every candidate was rate-limited. One last-ditch bounded retry after a short
-  // wait, in case it was a short-lived per-minute burst rather than a daily cap.
+  // A short wait only helps a short-lived per-minute rate-limit burst.
+  if (!isRateLimitError(lastError)) throw lastError;
   await sleep(FINAL_RETRY_DELAY_MS);
   return callGeminiOnModel(genai, candidates[candidates.length - 1], prompt, pdfBase64, mimeType);
 }
@@ -365,13 +400,16 @@ export default async function handler(req: VercelRequest, res: VercelResponse): 
   }
 
   // ─── Schema validation ──────────────────────────────────────────────────────
+  rawOutput = normaliseAnalysisOutput(rawOutput);
   let validationResult = validateAnalysisOutput(rawOutput);
 
   if (!validationResult.valid) {
     // Attempt repair if the output is partially valid (has clauses array)
     if (isPartiallyValid(rawOutput) && MAX_RETRIES > 0) {
       try {
-        const retryOutput = await callGeminiWithFallback(genai, repairPrompt, pdf_base64, resolvedMimeType);
+        const retryOutput = normaliseAnalysisOutput(
+          await callGeminiWithFallback(genai, repairPrompt, pdf_base64, resolvedMimeType)
+        );
         validationResult = validateAnalysisOutput(retryOutput);
         if (validationResult.valid) {
           rawOutput = retryOutput;

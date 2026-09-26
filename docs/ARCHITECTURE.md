@@ -16,14 +16,16 @@ Vercel Serverless Function
     │     indian_statute_reference.ts → CLAUSE_TYPE_TO_STATUTE
     │
     ├── Gemini (native PDF vision, JSON output mode)
-    │     Tries gemini-2.5-flash → gemini-2.5-flash-lite → gemini-2.0-flash
-    │     in order, falling back on rate-limit/quota errors (each model has
-    │     its own free-tier daily quota)
-    │     Input:  PDF bytes + statute-enriched prompt
+    │     Tries gemini-2.5-flash-lite → gemini-3.1-flash-lite → gemini-2.5-flash
+    │     → gemini-3.8-flash → gemini-3.7-flash in order (Flash-Lite first for
+    │     latency), falling back on quota/overload/unavailable errors (each
+    │     model has its own free-tier daily quota)
+    │     Input:  PDF bytes + statute-enriched prompt (with length limits)
     │     Output: JSON matching OfferLetterAnalysis interface
     │
-    └── Ajv schema validation
+    └── Normalise + Ajv schema validation
           analysis_schema_validator.ts
+          → normaliseAnalysisOutput() repairs benign slips (null key_numbers)
           → Returns validated OfferLetterAnalysis or HTTP 422
 ```
 
@@ -83,6 +85,7 @@ api/analyze_offer_letter.ts (Vercel fn)
   → buildAnalysisPrompt() — injects statute context
   → GoogleGenerativeAI.generateContent([prompt, pdfPart])
   → JSON.parse(responseText) — strips markdown fences
+  → normaliseAnalysisOutput() — fills information-free slips, never content
   → validateAnalysisOutput() — Ajv strict validation
   → [if invalid] one retry with repair prompt
   → res.status(200).json(analysis)

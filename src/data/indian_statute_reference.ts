@@ -46,9 +46,9 @@ export const INDIAN_STATUTE_REFERENCE: Record<StatuteKey, StatuteEntry> = {
     title: 'Agreement in restraint of trade, void',
     text: 'Every agreement by which any one is restrained from exercising a lawful profession, trade or business of any kind, is to that extent void.',
     relevance_note:
-      'Restraints operating ONLY during active employment are generally valid; restraints continuing AFTER employment ends are what this section typically voids. ' +
-      'Encode this distinction in the risk-assessment prompt sent to Gemini: a non-compete that operates post-employment is prima facie void under this section; ' +
-      'a non-compete scoped to "while employed here" is generally permissible. Bond clauses that prevent an employee from resigning freely may also be tested against this section.',
+      'Restraints that apply only while you are employed are generally valid; restraints that continue after employment ends are what this section typically voids. ' +
+      'A non-compete that operates after you leave is prima facie void under this section, while one limited to "while employed here" is generally permissible. ' +
+      'Bond clauses that stop an employee from resigning freely may also be tested against this section.',
     source_urls: [
       'https://indiacode.nic.in/bitstream/123456789/2187/1/A1872-09.pdf',
       'https://indiankanoon.org/doc/547706/',
@@ -66,9 +66,9 @@ export const INDIAN_STATUTE_REFERENCE: Record<StatuteKey, StatuteEntry> = {
       'knew, when they made the contract, to be likely to result from the breach of it. Such compensation is not to be given for any remote and indirect loss ' +
       'or damage sustained by reason of the breach.',
     relevance_note:
-      'Courts award actual/reasonable loss for bond or notice-period breach — not automatically the full stated penalty amount. ' +
-      'If a bond stipulates ₹2 lakh but the employer cannot demonstrate actual loss of that magnitude, courts may award a lesser sum. ' +
-      'Pair with ICA_SEC_74 (liquidated damages) when assessing bond penalty clauses.',
+      'Courts award actual, reasonable loss for a bond or notice-period breach — not automatically the full stated penalty. ' +
+      'If a bond names ₹2 lakh but the employer cannot show actual loss of that size, a court may award less. ' +
+      'Read together with Section 74 (liquidated damages) for bond penalties.',
     source_urls: [
       'https://indiacode.nic.in/bitstream/123456789/2187/1/A1872-09.pdf',
       'https://indiankanoon.org/doc/1998905/',
@@ -104,9 +104,8 @@ export const INDIAN_STATUTE_REFERENCE: Record<StatuteKey, StatuteEntry> = {
       'or is fraudulent; or involves or implies injury to the person or property of another; or the Court regards it as immoral, or opposed to public policy. ' +
       'In each of these cases, the consideration or object of an agreement is said to be unlawful. Every agreement of which the object or consideration is unlawful is void.',
     relevance_note:
-      'A probation or bond clause whose object is to trap an employee against their will (e.g., excessively long bond with disproportionate penalty on a low-salary role) ' +
-      'may be challenged as being against public policy under this section. ' +
-      'Use when assessing whether a clause\'s purpose is oppressive rather than protective of legitimate business interest.',
+      'A probation or bond clause designed to trap an employee against their will (for example, a very long bond with a disproportionate penalty on a low-salary role) ' +
+      'may be challenged as against public policy under this section — especially where its purpose looks oppressive rather than protective of a legitimate business interest.',
     source_urls: [
       'https://indiacode.nic.in/bitstream/123456789/2187/1/A1872-09.pdf',
       'https://indiankanoon.org/doc/1306826/',
@@ -144,10 +143,9 @@ export const INDIAN_STATUTE_REFERENCE: Record<StatuteKey, StatuteEntry> = {
       'Within six months from the date on which this Act becomes applicable to an industrial establishment, the employer shall submit to the Certifying Officer five copies of the draft standing orders ' +
       'proposed by him for adoption in his industrial establishment.',
     relevance_note:
-      'NEEDS_VERIFICATION — Section 3 governs procedural submission of standing orders, not notice periods directly. ' +
-      'The Act\'s Schedule (Model Standing Orders) is the source of the notice-period norms for industrial workers. ' +
-      'However, the Act applies primarily to industrial establishments; IT/service-sector companies are frequently not classified as "industrial establishments" under this Act. ' +
-      'Flag this nuance explicitly when citing this Act for notice-period clauses — do not overstate its applicability to tech sector offer letters.',
+      'Section 3 covers how standing orders are submitted, not notice periods directly — notice-period norms for industrial workers come from the Model Standing Orders in the Act\'s Schedule. ' +
+      'The Act applies mainly to industrial establishments, and IT/service-sector companies are often not classified as one, ' +
+      'so its relevance to a tech-sector offer letter is limited and should not be overstated.',
     source_urls: [
       'https://indiacode.nic.in/bitstream/123456789/1645/1/A194619.pdf',
       'https://indiankanoon.org/doc/1501591/',
@@ -171,9 +169,9 @@ export const INDIAN_STATUTE_REFERENCE: Record<StatuteKey, StatuteEntry> = {
       '(c) in the case of a work made in the course of the author\'s employment under a contract of service or apprenticeship, to which clause (b) or clause (c) of section 13 applies, ' +
       'the author shall, in the absence of any agreement to the contrary, be the first owner of the copyright therein.',
     relevance_note:
-      'Work created "in the course of employment" under a contract of service defaults to employer copyright ownership. ' +
-      'An IP assignment clause in an offer letter is therefore largely redundant for work done during employment hours/with company resources — the Act already assigns it to the employer. ' +
-      'Flag if the IP assignment clause attempts to claim work done outside employment scope (personal projects, prior inventions) — that overreach is the risk to highlight.',
+      'Work created "in the course of employment" under a contract of service belongs to the employer by default. ' +
+      'An IP assignment clause is therefore largely redundant for work done on the job or with company resources — the Act already gives it to the employer. ' +
+      'The real risk is a clause that also claims work done outside the scope of employment, such as personal projects or prior inventions.',
     source_urls: [
       'https://indiacode.nic.in/bitstream/123456789/1367/1/A195714.pdf',
       'https://indiankanoon.org/doc/793333/',
@@ -191,10 +189,9 @@ export const INDIAN_STATUTE_REFERENCE: Record<StatuteKey, StatuteEntry> = {
       '(b) by any person being the assignee of the person claiming to be the true and first inventor in respect of the right to make such an application; ' +
       '(c) by the legal representative of any deceased person who immediately before his death was entitled to make such an application.',
     relevance_note:
-      'NEEDS_VERIFICATION for direct employment IP relevance — Section 6 establishes who may apply for patents but does not explicitly address employer vs employee ownership of inventions. ' +
-      'The more directly relevant provision for employee inventions is typically found in the employment contract itself and the general principles of agency. ' +
-      'When citing this for IP assignment clauses, note the gap: Indian patent law does not have an explicit "employee invention" statute equivalent to some jurisdictions. ' +
-      'The risk to flag is an IP clause that attempts pre-assignment of all inventions (including pre-employment or unrelated-field inventions).',
+      'Section 6 sets out who may apply for a patent; it does not directly settle whether an employer or employee owns an invention. ' +
+      'Indian patent law has no dedicated "employee invention" provision, so ownership usually turns on the employment contract itself. ' +
+      'The risk to watch for is a clause that pre-assigns all inventions, including those made before joining or unrelated to the job.',
     source_urls: [
       'https://indiacode.nic.in/bitstream/123456789/1392/3/patents-act-1970.pdf',
       'https://indiankanoon.org/doc/1289218/',

@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest';
-import { verifyQuoteInDocument } from '../src/logic/document_quote_verifier';
+import { verifyNumbers, verifyQuoteInDocument } from '../src/logic/document_quote_verifier';
+
+describe('verifyNumbers — digit grouping', () => {
+  const noDuration = { duration_months: null, notice_days: null };
+
+  it('reads an Indian-grouped amount ("Rs. [1,00,000]/-") as 100000', () => {
+    const quote = 'you shall be liable to pay compensation amounting to Rs. [1,00,000]/- (Rupees One Lakh).';
+    expect(verifyNumbers(quote, { ...noDuration, amount_inr: 100000 })).toBeNull();
+  });
+
+  it('reads a Western-grouped amount ("INR 250,000") as 250000', () => {
+    expect(verifyNumbers('a bond of INR 250,000 applies', { ...noDuration, amount_inr: 250000 })).toBeNull();
+  });
+
+  it('still flags an amount that genuinely differs from the quote', () => {
+    const warning = verifyNumbers('compensation amounting to Rs. 1,00,000', { ...noDuration, amount_inr: 200000 });
+    expect(warning).toContain('Amount');
+  });
+});
 
 const DOC_A = 'Upon confirmation, either party shall give sixty (60) days advance written notice to terminate employment.';
 const DOC_B = 'This letter confirms a stipend of INR 35,000 per month for the internship period.';

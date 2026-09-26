@@ -59,6 +59,8 @@ export interface UseDocumentAnalysisReturn {
   extractedPdfText: string;
   /** The original File object uploaded. */
   originalFile: File | null;
+  /** Language code the current analysis' explanations were requested in. */
+  analysisLanguage: string;
   /** Triggers a new analysis for the given file, with explanations in the given language code. */
   analyzeDocument: (file: File, languageCode?: string) => Promise<void>;
   /** Asks a question against the current analysis. */
@@ -253,9 +255,11 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [qaHistory, setQaHistory] = useState<QAEntry[]>([]);
   const [extractedPdfText, setExtractedPdfText] = useState<string>('');
+  const [analysisLanguage, setAnalysisLanguage] = useState<string>(DEFAULT_LANGUAGE.code);
 
   const analyzeDocument = useCallback(async (file: File, languageCode: string = DEFAULT_LANGUAGE.code) => {
     setPhase('uploading');
+    setAnalysisLanguage(languageCode);
     setError(null);
     setAnalysis(null);
     setQaHistory([]);
@@ -383,6 +387,7 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
     originalFile,
     qaHistory,
     extractedPdfText,
+    analysisLanguage,
     analyzeDocument,
     askQuestion,
     reset,
