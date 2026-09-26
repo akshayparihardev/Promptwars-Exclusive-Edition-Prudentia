@@ -128,7 +128,6 @@ User uploads PDF
 │  2. PDF converted to base64                              │
 └──────────────────────────┬──────────────────────────────┘
                            │ POST /api/analyze_offer_letter
-                           │ Accept: text/event-stream (SSE)
                            ▼
 ┌─────────────────────────────────────────────────────────┐
 │  VERCEL SERVERLESS FUNCTION                              │
@@ -137,23 +136,21 @@ User uploads PDF
 │  4. Verbatim statute text injected into system prompt    │
 │     → Gemini cannot hallucinate grounded citations       │
 │  5. Gemini 2.5 Flash called with PDF (native vision)     │
-│     → generateContentStream() — tokens stream in         │
-│  6. Status SSE events fire as analysis progresses        │
-│     → "Bond clause detected → checking ICA §73 & §74"   │
-│  7. Full JSON validated against strict schema (Ajv)      │
+│  6. Full JSON validated against strict schema (Ajv)      │
 │     → Auto-retry with repair prompt on failure           │
-│  8. 'complete' SSE event fires with validated analysis   │
+│  7. Validated analysis returned as a single JSON        │
+│     response                                             │
 └──────────────────────────┬──────────────────────────────┘
-                           │ SSE stream
+                           │ JSON response
                            ▼
 ┌─────────────────────────────────────────────────────────┐
 │  CLIENT — Results                                        │
-│  9.  document_quote_verifier.ts verifies each quote      │
+│  8.  document_quote_verifier.ts verifies each quote      │
 │      against independently extracted PDF text            │
-│  10. verifyNumbers() cross-checks key_numbers vs quote   │
-│  11. Risk dashboard + clause cards rendered              │
-│  12. PDF.js renders original PDF in right pane           │
-│  13. "View in document" → tokenPositionMap highlight     │
+│  9.  verifyNumbers() cross-checks key_numbers vs quote   │
+│  10. Risk dashboard + clause cards rendered              │
+│  11. PDF.js renders original PDF in right pane           │
+│  12. "View in document" → tokenPositionMap highlight     │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -263,7 +260,7 @@ src/logic/
 └── pdf_text_extractor.ts          # PDF.js wrapper for independent text extraction
 
 api/
-└── analyze_offer_letter.ts         # Vercel serverless handler with SSE streaming
+└── analyze_offer_letter.ts         # Vercel serverless handler (single request/response)
 ```
 
 ---
@@ -352,14 +349,9 @@ We considered vector embeddings and RAG for statute retrieval. We rejected it. W
 - **Zero hallucination risk** — the statute text Gemini sees is byte-for-byte what a human curated
 - **Faster** — no embedding generation, no vector search latency
 
-### Streaming for Perceived Performance
+### Request Lifecycle
 
-The Gemini API call takes 15–25 seconds. Rather than blocking on the full response, the backend uses `generateContentStream()` and emits SSE events as analysis progresses. The user sees:
-
-1. Status messages: *"Bond clause detected — checking ICA §73 & §74..."*
-2. The complete result the moment the final token arrives
-
-This is a real architectural improvement, not a fake progress bar.
+The Gemini API call takes 15–25 seconds. The UI tracks distinct phases (`uploading` → `analyzing` → `validating` → `complete`) so the user always sees which stage is running, but the backend call itself is a single blocking request-response — there is no token-level streaming or per-clause status yet. Streaming the response (via `generateContentStream()` + SSE) so users see partial results and live per-clause status as they're found is a planned improvement, not yet implemented.
 
 ---
 
