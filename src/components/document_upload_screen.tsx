@@ -16,9 +16,14 @@ export function DocumentUploadScreen({ onFileSelected, isProcessing }: DocumentU
       setFileError('Only PDF files are accepted. Please upload your offer letter as a PDF.');
       return;
     }
-    const MAX_SIZE_BYTES = 10 * 1024 * 1024;
+    // Vercel's Node serverless functions hard-cap the request body at 4.5 MB,
+    // and base64-encoding a PDF inflates its size by ~33% before it's sent.
+    // 3 MB of raw file leaves headroom under that ceiling; anything larger
+    // would pass this check but fail at Vercel's routing layer in production
+    // with a non-JSON error the client can't parse.
+    const MAX_SIZE_BYTES = 3 * 1024 * 1024;
     if (file.size > MAX_SIZE_BYTES) {
-      setFileError('File is too large (maximum 10 MB). Try printing it to a smaller PDF.');
+      setFileError('File is too large (maximum 3 MB). Try printing it to a smaller PDF.');
       return;
     }
     onFileSelected(file);
@@ -70,7 +75,7 @@ export function DocumentUploadScreen({ onFileSelected, isProcessing }: DocumentU
               aria-label="Select PDF offer letter" style={{ display: 'none' }} onChange={handleFileChange} />
             <span className="upload-icon" aria-hidden="true">📄</span>
             <p>Drop your PDF here, or click to browse</p>
-            <p>PDF only · Max 10 MB · Not stored</p>
+            <p>PDF only · Max 3 MB · Not stored</p>
           </div>
           {fileError && <p id="upload-error" role="alert" aria-live="assertive">{fileError}</p>}
         </section>
