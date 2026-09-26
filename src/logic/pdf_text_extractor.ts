@@ -18,8 +18,11 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure the PDF.js worker from CDN (avoids bundler complexity)
-pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.9.155/pdf.worker.min.mjs`;
+// Configure the PDF.js worker from CDN (avoids bundler complexity).
+// Version is read from the installed package at runtime - pdf.js strictly
+// validates that worker and API versions match, so a hardcoded version
+// string here would silently drift out of sync on a future dependency bump.
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
 
 /**
  * Result of extracting text from a PDF.

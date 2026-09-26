@@ -141,7 +141,7 @@ export function PdfViewer({ file, targetPage, highlightQuote }: PdfViewerProps) 
     const load = async () => {
       try {
         pdfjsLib.GlobalWorkerOptions.workerSrc =
-          'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.4.162/pdf.worker.min.mjs';
+          `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
         const arrayBuffer = await file.arrayBuffer();
         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
         if (active) {
