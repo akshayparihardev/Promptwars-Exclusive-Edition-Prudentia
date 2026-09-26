@@ -162,7 +162,16 @@ async function callGemini(
   mimeType: string,
   isRetry: boolean
 ): Promise<unknown> {
-  const model = genai.getGenerativeModel({ model: GEMINI_MODEL });
+  // responseMimeType: 'application/json' forces Gemini's native JSON output
+  // mode - it can no longer wrap the response in markdown fences, prepend
+  // commentary, or otherwise emit non-JSON text before/after the object.
+  // This was the single biggest source of "JSON parse failure" retries;
+  // relying only on prompt instructions ("output ONLY this JSON object")
+  // worked most of the time but not always.
+  const model = genai.getGenerativeModel({
+    model: GEMINI_MODEL,
+    generationConfig: { responseMimeType: 'application/json' },
+  });
 
   const pdfPart: Part = {
     inlineData: {
