@@ -115,8 +115,8 @@ button{font-family:inherit}
   max-width:640px;width:100%;margin-top:var(--space-16);background:var(--color-surface);
   border:1px solid var(--color-border);border-radius:var(--radius-lg);padding:var(--space-8);box-shadow:var(--shadow-xs);
 }
-#prudentia-upload-screen #why-prudentia-heading{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--color-ink);margin-bottom:var(--space-2)}
-#prudentia-upload-screen section[aria-labelledby="why-prudentia-heading"] > p:first-of-type{font-size:var(--text-sm);color:var(--color-ink-faint);margin-bottom:var(--space-5)}
+#prudentia-upload-screen #why-prudentia-heading{font-family:var(--font-display);font-size:var(--text-xl);font-weight:600;color:var(--color-ink);margin-bottom:var(--space-2);text-align:center}
+#prudentia-upload-screen section[aria-labelledby="why-prudentia-heading"] > p:first-of-type{font-size:var(--text-sm);color:var(--color-ink-faint);margin-bottom:var(--space-5);text-align:center}
 .feature-list{list-style:none;display:flex;flex-direction:column;gap:var(--space-5)}
 .feature-list li{display:flex;gap:var(--space-3);font-size:var(--text-sm);color:var(--color-ink-muted);line-height:1.7}
 .feature-list .feature-icon{flex-shrink:0;width:22px;height:22px;border-radius:var(--radius-full);background:var(--color-primary-tint);color:var(--color-primary);display:flex;align-items:center;justify-content:center;margin-top:2px}
@@ -144,8 +144,15 @@ button{font-family:inherit}
   min-height:44px;display:flex;align-items:center;justify-content:center;transition:all var(--transition);
 }
 .state-steps{text-align:left;display:flex;flex-direction:column;gap:var(--space-2);margin-bottom:var(--space-6)}
-.state-step{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);color:var(--color-ink-muted);padding:var(--space-2) var(--space-3);background:var(--color-surface-2);border-radius:var(--radius-sm)}
-.state-step svg{flex-shrink:0;color:var(--color-primary)}
+.state-step{display:flex;align-items:center;gap:var(--space-2);font-size:var(--text-sm);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);transition:all var(--transition)}
+.state-step svg{flex-shrink:0}
+.state-step.is-pending{color:var(--color-ink-faint);background:transparent;opacity:0.55}
+.state-step.is-pending svg{color:var(--color-ink-faint)}
+.state-step.is-active{color:var(--color-ink);background:var(--color-primary-tint);font-weight:600}
+.state-step.is-active svg{color:var(--color-primary);animation:step-pulse 1.4s ease-in-out infinite}
+.state-step.is-done{color:var(--color-ink-muted);background:var(--color-surface-2)}
+.state-step.is-done svg{color:var(--color-minor)}
+@keyframes step-pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .state-footnote{font-size:var(--text-xs);color:var(--color-ink-faint)}
 
 .state-card.is-error{border-color:var(--color-significant-border)}

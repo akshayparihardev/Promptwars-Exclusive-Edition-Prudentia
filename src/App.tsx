@@ -5,7 +5,8 @@ import { DocumentUploadScreen } from './components/document_upload_screen.js';
 import { AnalysisResultsView } from './components/analysis_results_view.js';
 import { TwoPaneLayout } from './components/two_pane_layout.js';
 import { PdfViewer } from './components/pdf_viewer.js';
-import { IconScale, IconAlertTriangle, IconSearch, IconArrowRight, IconCheck, IconRefresh } from './components/icons.js';
+import { AnalyzingState } from './components/analyzing_state.js';
+import { IconAlertTriangle, IconRefresh } from './components/icons.js';
 
 /**
  * Prudentia — AI-powered offer letter analyser for Indian engineering students.
@@ -20,7 +21,6 @@ export default function App(): React.ReactElement {
     originalFile,
     qaHistory,
     extractedPdfText,
-    analysisStatus,
     analyzeDocument,
     askQuestion,
     reset,
@@ -60,28 +60,7 @@ export default function App(): React.ReactElement {
 
   // ── Analysis loading state ───────────────────────────────────────────────────
   if (isProcessing) {
-    return (
-      <div className="state-screen" role="status" aria-live="polite">
-        <div className="state-card">
-          <div className="state-wordmark"><IconScale size={16} /> Prudentia</div>
-          <div className="state-spinner-wrap">
-            <div className="state-spinner" />
-          </div>
-          <h2 className="state-headline">Analysing your offer letter</h2>
-          <p className="state-file">{fileName}</p>
-          <div className="state-status-message" aria-live="polite">
-            {analysisStatus || 'Starting analysis…'}
-          </div>
-          <div className="state-steps">
-            <div className="state-step"><IconScale size={15} /> Injecting real Indian statute text (ICA 1872, SRA 1963)</div>
-            <div className="state-step"><IconSearch size={15} /> Identifying and classifying clauses</div>
-            <div className="state-step"><IconArrowRight size={15} /> Modelling consequence scenarios per clause</div>
-            <div className="state-step"><IconCheck size={15} /> Verifying extracted quotes against source PDF</div>
-          </div>
-          <p className="state-footnote">This typically takes 15–25 seconds. We're being thorough.</p>
-        </div>
-      </div>
-    );
+    return <AnalyzingState key={fileName} fileName={fileName} />;
   }
 
   // ── Complete state — Two-pane layout ─────────────────────────────────────────
