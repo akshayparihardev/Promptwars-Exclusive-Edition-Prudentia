@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { useState } from 'react';
 import { useDocumentAnalysis } from './hooks/use_document_analysis.js';
 import { DocumentUploadScreen } from './components/document_upload_screen.js';
 import { AnalysisResultsView } from './components/analysis_results_view.js';
 import { TwoPaneLayout } from './components/two_pane_layout.js';
-import { PdfViewer } from './components/pdf_viewer.js';
 import { AnalyzingState } from './components/analyzing_state.js';
 import { IconAlertTriangle, IconRefresh } from './components/icons.js';
+
+// pdfjs-dist (used by PdfViewer) is a large dependency (~37MB unpacked) only
+// ever needed once analysis completes - lazy-loading it keeps it out of the
+// main bundle and off the critical path for first paint / the upload screen.
+const PdfViewer = React.lazy(() =>
+  import('./components/pdf_viewer.js').then((m) => ({ default: m.PdfViewer }))
+);
 
 /**
  * Prudentia — AI-powered offer letter analyser for Indian engineering students.
@@ -83,11 +89,13 @@ export default function App(): React.ReactElement {
         }
         rightPane={
           originalFile ? (
-            <PdfViewer
-              file={originalFile}
-              targetPage={targetPage}
-              highlightQuote={highlightQuote}
-            />
+            <Suspense fallback={<div className="state-spinner-wrap" style={{ paddingTop: '40%' }}><div className="state-spinner" /></div>}>
+              <PdfViewer
+                file={originalFile}
+                targetPage={targetPage}
+                highlightQuote={highlightQuote}
+              />
+            </Suspense>
           ) : null
         }
       />

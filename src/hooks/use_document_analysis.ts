@@ -16,7 +16,6 @@ import { useState, useCallback } from 'react';
 import type { OfferLetterAnalysis } from '../logic/analysis_schema_validator.js';
 import { buildNotAddressedResult, verifyQuoteInDocument } from '../logic/document_quote_verifier.js';
 import type { QuoteVerificationResult } from '../logic/document_quote_verifier.js';
-import { extractTextFromPdf } from '../logic/pdf_text_extractor.js';
 
 // ── State types ──────────────────────────────────────────────────────────────
 
@@ -259,8 +258,12 @@ export function useDocumentAnalysis(): UseDocumentAnalysisReturn {
     setFileName(file.name);
     setOriginalFile(file);
 
-    // Step 1: Extract text independently using PDF.js (client-side)
+    // Step 1: Extract text independently using PDF.js (client-side).
+    // Dynamically imported: pdfjs-dist is a large dependency (~37MB unpacked)
+    // that's only ever needed once a user actually uploads a file, so keeping
+    // it out of the main bundle noticeably speeds up first paint.
     try {
+      const { extractTextFromPdf } = await import('../logic/pdf_text_extractor.js');
       const extraction = await extractTextFromPdf(file);
       setExtractedPdfText(extraction.fullText);
     } catch {
